@@ -149,14 +149,14 @@ pipeline {
                         script {
                             echo '🔨 Building backend Docker image...'
                             dir('backend') {
-                                sh """
+                                sh '''
                                     docker build \
-                                        --build-arg BUILD_DATE=\$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+                                        --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
                                         --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
                                         -t ${BACKEND_IMAGE}:${IMAGE_TAG} \
                                         -t ${BACKEND_IMAGE}:latest \
                                         .
-                                """
+                                '''
                             }
                         }
                     }
@@ -167,14 +167,14 @@ pipeline {
                         script {
                             echo '🔨 Building frontend Docker image...'
                             dir('frontend') {
-                                sh """
+                                sh '''
                                     docker build \
-                                        --build-arg BUILD_DATE=\$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+                                        --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
                                         --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
                                         -t ${FRONTEND_IMAGE}:${IMAGE_TAG} \
                                         -t ${FRONTEND_IMAGE}:latest \
                                         .
-                                """
+                                '''
                             }
                         }
                     }
@@ -188,23 +188,23 @@ pipeline {
                     steps {
                         script {
                             echo '🐳 Scanning backend container image...'
-                            sh """
+                            sh '''
                                 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
                                     aquasec/trivy image --severity HIGH,CRITICAL \
                                     --format json --output ${SCAN_REPORTS_DIR}/backend-image-scan.json \
                                     ${BACKEND_IMAGE}:${IMAGE_TAG} || true
                                 
                                 if [ -f ${SCAN_REPORTS_DIR}/backend-image-scan.json ]; then
-                                    CRITICAL=\$(cat ${SCAN_REPORTS_DIR}/backend-image-scan.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length')
+                                    CRITICAL=$(cat ${SCAN_REPORTS_DIR}/backend-image-scan.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length')
                                     
-                                    echo "Backend Image - Critical: \$CRITICAL"
+                                    echo "Backend Image - Critical: $CRITICAL"
                                     
-                                    if [ "\$CRITICAL" -gt 0 ]; then
+                                    if [ "$CRITICAL" -gt 0 ]; then
                                         echo "❌ CRITICAL vulnerabilities in backend image!"
                                         exit 1
                                     fi
                                 fi
-                            """
+                            '''
                         }
                     }
                 }
@@ -213,23 +213,23 @@ pipeline {
                     steps {
                         script {
                             echo '🐳 Scanning frontend container image...'
-                            sh """
+                            sh '''
                                 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
                                     aquasec/trivy image --severity HIGH,CRITICAL \
                                     --format json --output ${SCAN_REPORTS_DIR}/frontend-image-scan.json \
                                     ${FRONTEND_IMAGE}:${IMAGE_TAG} || true
                                 
                                 if [ -f ${SCAN_REPORTS_DIR}/frontend-image-scan.json ]; then
-                                    CRITICAL=\$(cat ${SCAN_REPORTS_DIR}/frontend-image-scan.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length')
+                                    CRITICAL=$(cat ${SCAN_REPORTS_DIR}/frontend-image-scan.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length')
                                     
-                                    echo "Frontend Image - Critical: \$CRITICAL"
+                                    echo "Frontend Image - Critical: $CRITICAL"
                                     
-                                    if [ "\$CRITICAL" -gt 0 ]; then
+                                    if [ "$CRITICAL" -gt 0 ]; then
                                         echo "❌ CRITICAL vulnerabilities in frontend image!"
                                         exit 1
                                     fi
                                 fi
-                            """
+                            '''
                         }
                     }
                 }
@@ -242,11 +242,11 @@ pipeline {
                     steps {
                         script {
                             echo '📋 Generating backend SBOM...'
-                            sh """
+                            sh '''
                                 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
                                     anchore/syft:latest ${BACKEND_IMAGE}:${IMAGE_TAG} \
                                     -o cyclonedx-json=${SCAN_REPORTS_DIR}/backend-sbom.json
-                            """
+                            '''
                         }
                     }
                 }
@@ -255,11 +255,11 @@ pipeline {
                     steps {
                         script {
                             echo '📋 Generating frontend SBOM...'
-                            sh """
+                            sh '''
                                 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
                                     anchore/syft:latest ${FRONTEND_IMAGE}:${IMAGE_TAG} \
                                     -o cyclonedx-json=${SCAN_REPORTS_DIR}/frontend-sbom.json
-                            """
+                            '''
                         }
                     }
                 }
@@ -306,17 +306,17 @@ pipeline {
             steps {
                 script {
                     echo '📤 Pushing images to ECR...'
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS_ID}"]]) {
-                        sh """
-                            aws ecr get-login-password --region ${AWS_REGION} | \
-                            docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+                        sh '''
+                            aws ecr get-login-password --region $AWS_REGION | \
+                            docker login --username AWS --password-stdin $ECR_REGISTRY
                             
-                            docker push ${BACKEND_IMAGE}:${IMAGE_TAG}
-                            docker push ${BACKEND_IMAGE}:latest
+                            docker push $BACKEND_IMAGE:$IMAGE_TAG
+                            docker push $BACKEND_IMAGE:latest
                             
-                            docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}
-                            docker push ${FRONTEND_IMAGE}:latest
-                        """
+                            docker push $FRONTEND_IMAGE:$IMAGE_TAG
+                            docker push $FRONTEND_IMAGE:latest
+                        '''
                     }
                 }
             }
@@ -326,20 +326,20 @@ pipeline {
             steps {
                 script {
                     echo '🚀 Deploying to ECS...'
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS_ID}"]]) {
-                        sh """
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+                        sh '''
                             aws ecs update-service \
-                                --cluster ${ECS_CLUSTER} \
-                                --service ${ECS_BACKEND_SERVICE} \
+                                --cluster $ECS_CLUSTER \
+                                --service $ECS_BACKEND_SERVICE \
                                 --force-new-deployment \
-                                --region ${AWS_REGION}
+                                --region $AWS_REGION
                             
                             aws ecs update-service \
-                                --cluster ${ECS_CLUSTER} \
-                                --service ${ECS_FRONTEND_SERVICE} \
+                                --cluster $ECS_CLUSTER \
+                                --service $ECS_FRONTEND_SERVICE \
                                 --force-new-deployment \
-                                --region ${AWS_REGION}
-                        """
+                                --region $AWS_REGION
+                        '''
                     }
                 }
             }
@@ -349,13 +349,13 @@ pipeline {
             steps {
                 script {
                     echo '⏳ Waiting for ECS deployment...'
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS_ID}"]]) {
-                        sh """
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+                        sh '''
                             aws ecs wait services-stable \
-                                --cluster ${ECS_CLUSTER} \
-                                --services ${ECS_BACKEND_SERVICE} ${ECS_FRONTEND_SERVICE} \
-                                --region ${AWS_REGION}
-                        """
+                                --cluster $ECS_CLUSTER \
+                                --services $ECS_BACKEND_SERVICE $ECS_FRONTEND_SERVICE \
+                                --region $AWS_REGION
+                        '''
                     }
                 }
             }
@@ -365,22 +365,22 @@ pipeline {
             steps {
                 script {
                     echo '🏥 Running health checks...'
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS_ID}"]]) {
-                        sh """
-                            ALB_DNS=\$(aws elbv2 describe-load-balancers \
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+                        sh '''
+                            ALB_DNS=$(aws elbv2 describe-load-balancers \
                                 --names taskflow-alb \
                                 --query 'LoadBalancers[0].DNSName' \
                                 --output text \
-                                --region ${AWS_REGION})
+                                --region $AWS_REGION)
                             
                             for i in {1..10}; do
-                                if curl -f http://\$ALB_DNS:5000/health; then
+                                if curl -f http://$ALB_DNS:5000/health; then
                                     echo "✅ Health check passed"
                                     break
                                 fi
                                 sleep 10
                             done
-                        """
+                        '''
                     }
                 }
             }
@@ -394,7 +394,7 @@ pipeline {
         }
         
         success {
-            echo "✅ Pipeline completed! Images: ${IMAGE_TAG}"
+            echo "✅ Pipeline completed! Images: ${env.IMAGE_TAG}"
         }
         
         failure {
