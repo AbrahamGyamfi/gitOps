@@ -151,6 +151,8 @@ pipeline {
                             dir('backend') {
                                 sh '''
                                     docker build \
+                                        --cache-from ${BACKEND_IMAGE}:latest \
+                                        --build-arg BUILDKIT_INLINE_CACHE=1 \
                                         --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
                                         --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
                                         -t ${BACKEND_IMAGE}:${IMAGE_TAG} \
@@ -169,6 +171,8 @@ pipeline {
                             dir('frontend') {
                                 sh '''
                                     docker build \
+                                        --cache-from ${FRONTEND_IMAGE}:latest \
+                                        --build-arg BUILDKIT_INLINE_CACHE=1 \
                                         --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
                                         --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
                                         -t ${FRONTEND_IMAGE}:${IMAGE_TAG} \
@@ -328,57 +332,59 @@ pipeline {
                     echo '🚀 Updating ECS task definitions with new image tags...'
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
                         sh '''
-                            # Get current backend task definition
-                            BACKEND_TASK_DEF=$(aws ecs describe-task-definition \
+                            # Update backend task definition
+                            aws ecs describe-task-definition \
                                 --task-definition taskflow-backend \
                                 --region $AWS_REGION \
-                                --query 'taskDefinition' | \
-                                jq --arg IMAGE "$BACKEND_IMAGE:$IMAGE_TAG" \
-                                '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+                                --query 'taskDefinition' > /tmp/backend-task.json
                             
-                            # Register new backend task definition
-                            NEW_BACKEND_TASK=$(echo $BACKEND_TASK_DEF | \
-                                aws ecs register-task-definition \
-                                --cli-input-json file:///dev/stdin \
+                            jq --arg IMAGE "$BACKEND_IMAGE:$IMAGE_TAG" \
+                                'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy) | .containerDefinitions[0].image = $IMAGE' \
+                                /tmp/backend-task.json > /tmp/backend-task-new.json
+                            
+                            NEW_BACKEND_TASK=$(aws ecs register-task-definition \
+                                --cli-input-json file:///tmp/backend-task-new.json \
                                 --region $AWS_REGION \
                                 --query 'taskDefinition.taskDefinitionArn' \
                                 --output text)
                             
                             echo "✅ Registered backend task: $NEW_BACKEND_TASK"
                             
-                            # Get current frontend task definition
-                            FRONTEND_TASK_DEF=$(aws ecs describe-task-definition \
+                            # Update frontend task definition
+                            aws ecs describe-task-definition \
                                 --task-definition taskflow-frontend \
                                 --region $AWS_REGION \
-                                --query 'taskDefinition' | \
-                                jq --arg IMAGE "$FRONTEND_IMAGE:$IMAGE_TAG" \
-                                '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+                                --query 'taskDefinition' > /tmp/frontend-task.json
                             
-                            # Register new frontend task definition
-                            NEW_FRONTEND_TASK=$(echo $FRONTEND_TASK_DEF | \
-                                aws ecs register-task-definition \
-                                --cli-input-json file:///dev/stdin \
+                            jq --arg IMAGE "$FRONTEND_IMAGE:$IMAGE_TAG" \
+                                'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy) | .containerDefinitions[0].image = $IMAGE' \
+                                /tmp/frontend-task.json > /tmp/frontend-task-new.json
+                            
+                            NEW_FRONTEND_TASK=$(aws ecs register-task-definition \
+                                --cli-input-json file:///tmp/frontend-task-new.json \
                                 --region $AWS_REGION \
                                 --query 'taskDefinition.taskDefinitionArn' \
                                 --output text)
                             
                             echo "✅ Registered frontend task: $NEW_FRONTEND_TASK"
                             
-                            # Update backend service with new task definition
+                            # Update services
                             aws ecs update-service \
                                 --cluster $ECS_CLUSTER \
                                 --service $ECS_BACKEND_SERVICE \
                                 --task-definition $NEW_BACKEND_TASK \
-                                --region $AWS_REGION
+                                --region $AWS_REGION > /dev/null
                             
-                            # Update frontend service with new task definition
                             aws ecs update-service \
                                 --cluster $ECS_CLUSTER \
                                 --service $ECS_FRONTEND_SERVICE \
                                 --task-definition $NEW_FRONTEND_TASK \
-                                --region $AWS_REGION
+                                --region $AWS_REGION > /dev/null
                             
-                            echo "🚀 ECS services updated with new task definitions"
+                            echo "🚀 ECS services updated"
+                            
+                            # Cleanup temp files
+                            rm -f /tmp/*-task*.json
                         '''
                     }
                 }
