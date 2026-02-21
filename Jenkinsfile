@@ -350,12 +350,22 @@ pipeline {
                 script {
                     echo '⏳ Waiting for ECS deployment...'
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
-                        sh '''
-                            aws ecs wait services-stable \
-                                --cluster $ECS_CLUSTER \
-                                --services $ECS_BACKEND_SERVICE $ECS_FRONTEND_SERVICE \
-                                --region $AWS_REGION
-                        '''
+                        timeout(time: 10, unit: 'MINUTES') {
+                            sh '''
+                                aws ecs wait services-stable \
+                                    --cluster $ECS_CLUSTER \
+                                    --services $ECS_BACKEND_SERVICE $ECS_FRONTEND_SERVICE \
+                                    --region $AWS_REGION || {
+                                        echo "⚠️  Deployment taking longer than expected, checking status..."
+                                        aws ecs describe-services --cluster $ECS_CLUSTER \
+                                            --services $ECS_BACKEND_SERVICE $ECS_FRONTEND_SERVICE \
+                                            --region $AWS_REGION \
+                                            --query 'services[].[serviceName,runningCount,desiredCount]' \
+                                            --output table
+                                        exit 1
+                                    }
+                            '''
+                        }
                     }
                 }
             }
