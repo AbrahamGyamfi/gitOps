@@ -18,16 +18,11 @@ data "aws_subnets" "default" {
 }
 
 module "security_group" {
-  source = "./modules/ec2"
+  source = "./modules/security/security_group"
 
-  instance_name              = "placeholder"
-  instance_type              = "t2.micro"
-  key_name                   = var.key_name
-  security_group_id          = ""
-  role                       = "placeholder"
-  security_group_name        = "${var.project_name}-sg"
-  security_group_description = "Security group for TaskFlow application"
-  vpc_id                     = data.aws_vpc.default.id
+  name        = "${var.project_name}-sg"
+  description = "Security group for TaskFlow application"
+  vpc_id      = data.aws_vpc.default.id
 
   ingress_rules = [
     {
@@ -64,46 +59,38 @@ module "security_group" {
 }
 
 module "jenkins" {
-  source = "./modules/ec2"
+  source = "./modules/compute/ec2"
 
-  instance_name              = "${var.project_name}-jenkins-server"
-  instance_type              = var.jenkins_instance_type
-  key_name                   = var.key_name
-  security_group_id          = module.security_group.security_group_id
-  user_data_file             = "${path.module}/../jenkins-userdata.sh"
-  role                       = "jenkins"
-  security_group_name        = "unused"
-  security_group_description = "unused"
-  vpc_id                     = data.aws_vpc.default.id
-  ingress_rules              = []
-  tags                       = local.common_tags
+  instance_name     = "${var.project_name}-jenkins-server"
+  instance_type     = var.jenkins_instance_type
+  key_name          = var.key_name
+  security_group_id = module.security_group.security_group_id
+  user_data_file    = "${path.module}/../jenkins-userdata.sh"
+  role              = "jenkins"
+  tags              = local.common_tags
 }
 
 module "app" {
-  source = "./modules/ec2"
+  source = "./modules/compute/ec2"
 
-  instance_name              = "${var.project_name}-app-server"
-  instance_type              = var.app_instance_type
-  key_name                   = var.key_name
-  security_group_id          = module.security_group.security_group_id
-  user_data_file             = "${path.module}/../app-userdata.sh"
-  role                       = "application"
-  security_group_name        = "unused"
-  security_group_description = "unused"
-  vpc_id                     = data.aws_vpc.default.id
-  ingress_rules              = []
-  tags                       = local.common_tags
+  instance_name     = "${var.project_name}-app-server"
+  instance_type     = var.app_instance_type
+  key_name          = var.key_name
+  security_group_id = module.security_group.security_group_id
+  user_data_file    = "${path.module}/../app-userdata.sh"
+  role              = "application"
+  tags              = local.common_tags
 }
 
 module "iam" {
-  source = "./modules/iam"
+  source = "./modules/security/iam"
 
   project_name = var.project_name
   tags         = local.common_tags
 }
 
 module "ecr_backend" {
-  source = "./modules/ecr"
+  source = "./modules/compute/ecr"
 
   repository_name = "${var.project_name}-backend"
   image_count     = 10
@@ -111,7 +98,7 @@ module "ecr_backend" {
 }
 
 module "ecr_frontend" {
-  source = "./modules/ecr"
+  source = "./modules/compute/ecr"
 
   repository_name = "${var.project_name}-frontend"
   image_count     = 10
@@ -119,7 +106,7 @@ module "ecr_frontend" {
 }
 
 module "alb" {
-  source = "./modules/alb"
+  source = "./modules/networking/alb"
 
   project_name = var.project_name
   vpc_id       = data.aws_vpc.default.id
@@ -128,7 +115,7 @@ module "alb" {
 }
 
 module "cloudwatch_backend" {
-  source = "./modules/cloudwatch"
+  source = "./modules/networking/cloudwatch"
 
   project_name = var.project_name
   service_name = "backend"
@@ -137,7 +124,7 @@ module "cloudwatch_backend" {
 }
 
 module "cloudwatch_frontend" {
-  source = "./modules/cloudwatch"
+  source = "./modules/networking/cloudwatch"
 
   project_name = var.project_name
   service_name = "frontend"
@@ -146,7 +133,7 @@ module "cloudwatch_frontend" {
 }
 
 module "ecs_backend" {
-  source = "./modules/ecs"
+  source = "./modules/compute/ecs"
 
   project_name          = var.project_name
   service_name          = "backend"
@@ -182,7 +169,7 @@ module "ecs_backend" {
 }
 
 module "ecs_frontend" {
-  source = "./modules/ecs"
+  source = "./modules/compute/ecs"
 
   project_name          = var.project_name
   service_name          = "frontend"
