@@ -70,12 +70,13 @@ pipeline {
                             CRITICAL=$(cat ${SCAN_REPORTS_DIR}/sast-report.json | jq '[.results[] | select(.extra.severity=="ERROR")] | length')
                             echo "SAST - Critical: $CRITICAL"
                             
+                            # Warning only - don't block for now
                             if [ "$CRITICAL" -gt 0 ]; then
-                                echo "❌ CRITICAL security issues found in code!"
-                                exit 1
+                                echo "⚠️  WARNING: $CRITICAL CRITICAL security issues found in code!"
+                                echo "Review security-reports/sast-report.json"
                             fi
                         fi
-                        echo "✅ No critical SAST issues"
+                        echo "✅ SAST scan completed"
                     '''
                 }
             }

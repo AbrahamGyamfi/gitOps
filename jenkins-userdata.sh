@@ -32,6 +32,6 @@ systemctl start jenkins
 systemctl enable jenkins
 
 # Install additional tools
-yum install -y git curl wget unzip
+yum install -y git curl wget unzip jq
 
 echo "Jenkins installation completed!"
