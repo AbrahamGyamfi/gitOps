@@ -325,20 +325,60 @@ pipeline {
         stage('Deploy to ECS') {
             steps {
                 script {
-                    echo '🚀 Deploying to ECS...'
+                    echo '🚀 Updating ECS task definitions with new image tags...'
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
                         sh '''
+                            # Get current backend task definition
+                            BACKEND_TASK_DEF=$(aws ecs describe-task-definition \
+                                --task-definition taskflow-backend \
+                                --region $AWS_REGION \
+                                --query 'taskDefinition' | \
+                                jq --arg IMAGE "$BACKEND_IMAGE:$IMAGE_TAG" \
+                                '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+                            
+                            # Register new backend task definition
+                            NEW_BACKEND_TASK=$(echo $BACKEND_TASK_DEF | \
+                                aws ecs register-task-definition \
+                                --cli-input-json file:///dev/stdin \
+                                --region $AWS_REGION \
+                                --query 'taskDefinition.taskDefinitionArn' \
+                                --output text)
+                            
+                            echo "✅ Registered backend task: $NEW_BACKEND_TASK"
+                            
+                            # Get current frontend task definition
+                            FRONTEND_TASK_DEF=$(aws ecs describe-task-definition \
+                                --task-definition taskflow-frontend \
+                                --region $AWS_REGION \
+                                --query 'taskDefinition' | \
+                                jq --arg IMAGE "$FRONTEND_IMAGE:$IMAGE_TAG" \
+                                '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+                            
+                            # Register new frontend task definition
+                            NEW_FRONTEND_TASK=$(echo $FRONTEND_TASK_DEF | \
+                                aws ecs register-task-definition \
+                                --cli-input-json file:///dev/stdin \
+                                --region $AWS_REGION \
+                                --query 'taskDefinition.taskDefinitionArn' \
+                                --output text)
+                            
+                            echo "✅ Registered frontend task: $NEW_FRONTEND_TASK"
+                            
+                            # Update backend service with new task definition
                             aws ecs update-service \
                                 --cluster $ECS_CLUSTER \
                                 --service $ECS_BACKEND_SERVICE \
-                                --force-new-deployment \
+                                --task-definition $NEW_BACKEND_TASK \
                                 --region $AWS_REGION
                             
+                            # Update frontend service with new task definition
                             aws ecs update-service \
                                 --cluster $ECS_CLUSTER \
                                 --service $ECS_FRONTEND_SERVICE \
-                                --force-new-deployment \
+                                --task-definition $NEW_FRONTEND_TASK \
                                 --region $AWS_REGION
+                            
+                            echo "🚀 ECS services updated with new task definitions"
                         '''
                     }
                 }
@@ -400,7 +440,34 @@ pipeline {
     post {
         always {
             archiveArtifacts artifacts: "${SCAN_REPORTS_DIR}/**/*", allowEmptyArchive: true
-            sh "docker image prune -f && docker container prune -f"
+            script {
+                echo '🧹 Cleaning up old Docker images and ECS task definitions...'
+                sh "docker image prune -f && docker container prune -f"
+                
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+                    sh '''
+                        # Clean up old ECS task definitions (keep last 5)
+                        for FAMILY in taskflow-backend taskflow-frontend; do
+                            OLD_TASKS=$(aws ecs list-task-definitions \
+                                --family-prefix $FAMILY \
+                                --status ACTIVE \
+                                --sort DESC \
+                                --region $AWS_REGION \
+                                --query 'taskDefinitionArns[5:]' \
+                                --output text)
+                            
+                            for TASK_ARN in $OLD_TASKS; do
+                                echo "Deregistering old task: $TASK_ARN"
+                                aws ecs deregister-task-definition \
+                                    --task-definition $TASK_ARN \
+                                    --region $AWS_REGION || true
+                            done
+                        done
+                        
+                        echo "✅ Cleanup completed"
+                    '''
+                }
+            }
         }
         
         success {
