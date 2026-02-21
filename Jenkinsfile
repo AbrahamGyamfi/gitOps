@@ -274,7 +274,7 @@ pipeline {
                             echo '🧪 Running backend tests...'
                             dir('backend') {
                                 sh '''
-                                    docker run --rm -v $(pwd):/app -w /app node:18-alpine sh -c '
+                                    docker run --rm -v "${WORKSPACE}/backend":/app -w /app node:18-alpine sh -c '
                                         npm install
                                         npm test
                                     '
@@ -290,7 +290,7 @@ pipeline {
                             echo '🧪 Running frontend tests...'
                             dir('frontend') {
                                 sh '''
-                                    docker run --rm -v $(pwd):/app -w /app node:18-alpine sh -c '
+                                    docker run --rm -v "${WORKSPACE}/frontend":/app -w /app node:18-alpine sh -c '
                                         npm install --legacy-peer-deps
                                         CI=true npm test -- --passWithNoTests
                                     '
