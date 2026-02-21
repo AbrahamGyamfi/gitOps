@@ -103,5 +103,9 @@ module "ecs_frontend" {
   log_group_name        = module.cloudwatch_frontend.log_group_name
   aws_region            = var.aws_region
 
+  environment_variables = [
+    { name = "BACKEND_HOST", value = module.alb.alb_dns_name }
+  ]
+
   tags = local.common_tags
 }

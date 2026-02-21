@@ -32,8 +32,11 @@ LABEL org.opencontainers.image.version="${BUILD_NUMBER}"
 LABEL org.opencontainers.image.title="TaskFlow Frontend"
 LABEL org.opencontainers.image.description="React frontend for TaskFlow application"
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy custom nginx config template
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+
+# Set default backend host (can be overridden by environment variable)
+ENV BACKEND_HOST=localhost
 
 # Copy build files from build stage
 COPY --from=build /app/build /usr/share/nginx/html
