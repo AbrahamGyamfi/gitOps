@@ -26,7 +26,10 @@ terraform.tfvars
 
 # Security reports
 security-reports/
-*.json
+# Security reports only
+security-reports/*.json
+*.tfstate
+*.tfstate.backup
 
 # IDE
 .vscode/
