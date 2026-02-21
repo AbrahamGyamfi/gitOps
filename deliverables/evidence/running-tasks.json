@@ -1,0 +1,6 @@
+{
+    "taskArns": [
+        "arn:aws:ecs:eu-west-1:697863031884:task/taskflow-cluster/b9548506c0694a3fa0b8866c6212ba5b",
+        "arn:aws:ecs:eu-west-1:697863031884:task/taskflow-cluster/dee5d2ca4cb14aa7aecfbff7bdd78749"
+    ]
+}

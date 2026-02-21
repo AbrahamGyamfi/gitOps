@@ -1,0 +1,84 @@
+{
+    "taskDefinition": {
+        "taskDefinitionArn": "arn:aws:ecs:eu-west-1:697863031884:task-definition/taskflow-frontend:5",
+        "containerDefinitions": [
+            {
+                "name": "frontend",
+                "image": "697863031884.dkr.ecr.eu-west-1.amazonaws.com/taskflow-frontend:build-6",
+                "cpu": 0,
+                "portMappings": [
+                    {
+                        "containerPort": 80,
+                        "hostPort": 80,
+                        "protocol": "tcp"
+                    }
+                ],
+                "essential": true,
+                "environment": [
+                    {
+                        "name": "BACKEND_HOST",
+                        "value": "taskflow-alb-1427958729.eu-west-1.elb.amazonaws.com"
+                    }
+                ],
+                "mountPoints": [],
+                "volumesFrom": [],
+                "logConfiguration": {
+                    "logDriver": "awslogs",
+                    "options": {
+                        "awslogs-group": "/ecs/taskflow/frontend",
+                        "awslogs-region": "eu-west-1",
+                        "awslogs-stream-prefix": "frontend"
+                    }
+                },
+                "systemControls": []
+            }
+        ],
+        "family": "taskflow-frontend",
+        "taskRoleArn": "arn:aws:iam::697863031884:role/taskflow-ecs-task-role",
+        "executionRoleArn": "arn:aws:iam::697863031884:role/taskflow-ecs-execution-role",
+        "networkMode": "awsvpc",
+        "revision": 5,
+        "volumes": [],
+        "status": "ACTIVE",
+        "requiresAttributes": [
+            {
+                "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+            },
+            {
+                "name": "ecs.capability.execution-role-awslogs"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.ecr-auth"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.task-iam-role"
+            },
+            {
+                "name": "ecs.capability.execution-role-ecr-pull"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+            },
+            {
+                "name": "ecs.capability.task-eni"
+            }
+        ],
+        "placementConstraints": [],
+        "compatibilities": [
+            "EC2",
+            "MANAGED_INSTANCES",
+            "FARGATE"
+        ],
+        "requiresCompatibilities": [
+            "FARGATE"
+        ],
+        "cpu": "256",
+        "memory": "512",
+        "registeredAt": "2026-02-21T23:37:43.928000+00:00",
+        "registeredBy": "arn:aws:iam::697863031884:user/Gyamfi"
+    },
+    "tags": []
+}

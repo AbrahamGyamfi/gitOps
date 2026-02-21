@@ -1,0 +1,45 @@
+[
+    {
+        "registryId": "697863031884",
+        "repositoryName": "taskflow-backend",
+        "imageDigest": "sha256:584f3154174016783d4665c7bc30af53154ab0b7cb1ff259efad6f211604bfd2",
+        "imageTags": [
+            "build-3"
+        ],
+        "imageSizeInBytes": 67798084,
+        "imagePushedAt": "2026-02-21T23:06:45.935000+00:00",
+        "imageManifestMediaType": "application/vnd.docker.distribution.manifest.v2+json",
+        "artifactMediaType": "application/vnd.docker.container.image.v1+json",
+        "lastRecordedPullTime": "2026-02-21T23:09:30.372000+00:00",
+        "imageStatus": "ACTIVE"
+    },
+    {
+        "registryId": "697863031884",
+        "repositoryName": "taskflow-backend",
+        "imageDigest": "sha256:3ed29994f00daf3527ae6c0b11d200b0e9603a29182b48317f746cd7206b7bdb",
+        "imageTags": [
+            "build-5"
+        ],
+        "imageSizeInBytes": 67800287,
+        "imagePushedAt": "2026-02-21T23:21:29.333000+00:00",
+        "imageManifestMediaType": "application/vnd.docker.distribution.manifest.v2+json",
+        "artifactMediaType": "application/vnd.docker.container.image.v1+json",
+        "lastRecordedPullTime": "2026-02-21T23:22:14.627000+00:00",
+        "imageStatus": "ACTIVE"
+    },
+    {
+        "registryId": "697863031884",
+        "repositoryName": "taskflow-backend",
+        "imageDigest": "sha256:9cd422cef31e3b83a02970ce84995b8ba40e1fb39a612be527d3442b963d5a7f",
+        "imageTags": [
+            "build-6",
+            "latest"
+        ],
+        "imageSizeInBytes": 48598490,
+        "imagePushedAt": "2026-02-21T23:37:40.060000+00:00",
+        "imageManifestMediaType": "application/vnd.docker.distribution.manifest.v2+json",
+        "artifactMediaType": "application/vnd.docker.container.image.v1+json",
+        "lastRecordedPullTime": "2026-02-21T23:38:23.694000+00:00",
+        "imageStatus": "ACTIVE"
+    }
+]
