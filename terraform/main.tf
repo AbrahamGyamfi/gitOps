@@ -6,11 +6,93 @@ locals {
   }
 }
 
+data "aws_vpc" "default" {
+  default = true
+}
+
 data "aws_subnets" "default" {
   filter {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
   }
+}
+
+module "security_group" {
+  source = "./modules/ec2"
+
+  instance_name              = "placeholder"
+  instance_type              = "t2.micro"
+  key_name                   = var.key_name
+  security_group_id          = ""
+  role                       = "placeholder"
+  security_group_name        = "${var.project_name}-sg"
+  security_group_description = "Security group for TaskFlow application"
+  vpc_id                     = data.aws_vpc.default.id
+
+  ingress_rules = [
+    {
+      description = "SSH"
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      cidr_blocks = [var.allowed_ssh_cidr]
+    },
+    {
+      description = "HTTP"
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    },
+    {
+      description = "Jenkins"
+      from_port   = 8080
+      to_port     = 8080
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    },
+    {
+      description = "Backend API"
+      from_port   = 5000
+      to_port     = 5000
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  ]
+
+  tags = local.common_tags
+}
+
+module "jenkins" {
+  source = "./modules/ec2"
+
+  instance_name              = "${var.project_name}-jenkins-server"
+  instance_type              = var.jenkins_instance_type
+  key_name                   = var.key_name
+  security_group_id          = module.security_group.security_group_id
+  user_data_file             = "${path.module}/../jenkins-userdata.sh"
+  role                       = "jenkins"
+  security_group_name        = "unused"
+  security_group_description = "unused"
+  vpc_id                     = data.aws_vpc.default.id
+  ingress_rules              = []
+  tags                       = local.common_tags
+}
+
+module "app" {
+  source = "./modules/ec2"
+
+  instance_name              = "${var.project_name}-app-server"
+  instance_type              = var.app_instance_type
+  key_name                   = var.key_name
+  security_group_id          = module.security_group.security_group_id
+  user_data_file             = "${path.module}/../app-userdata.sh"
+  role                       = "application"
+  security_group_name        = "unused"
+  security_group_description = "unused"
+  vpc_id                     = data.aws_vpc.default.id
+  ingress_rules              = []
+  tags                       = local.common_tags
 }
 
 module "iam" {
@@ -24,6 +106,7 @@ module "ecr_backend" {
   source = "./modules/ecr"
 
   repository_name = "${var.project_name}-backend"
+  image_count     = 10
   tags            = local.common_tags
 }
 
@@ -31,6 +114,7 @@ module "ecr_frontend" {
   source = "./modules/ecr"
 
   repository_name = "${var.project_name}-frontend"
+  image_count     = 10
   tags            = local.common_tags
 }
 

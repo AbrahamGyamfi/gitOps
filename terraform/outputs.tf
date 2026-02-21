@@ -1,26 +1,26 @@
 output "jenkins_public_ip" {
   description = "Jenkins server public IP"
-  value       = aws_instance.jenkins.public_ip
+  value       = module.jenkins.instance_public_ip
 }
 
 output "jenkins_url" {
   description = "Jenkins URL"
-  value       = "http://${aws_instance.jenkins.public_ip}:8080"
+  value       = "http://${module.jenkins.instance_public_ip}:8080"
 }
 
 output "app_public_ip" {
   description = "Application server public IP"
-  value       = aws_instance.app.public_ip
+  value       = module.app.instance_public_ip
 }
 
 output "app_url" {
   description = "Application URL"
-  value       = "http://${aws_instance.app.public_ip}"
+  value       = "http://${module.app.instance_public_ip}"
 }
 
 output "security_group_id" {
   description = "Security group ID"
-  value       = aws_security_group.taskflow.id
+  value       = module.security_group.security_group_id
 }
 
 output "ecr_backend_repository_url" {
@@ -35,12 +35,12 @@ output "ecr_frontend_repository_url" {
 
 output "ssh_jenkins" {
   description = "SSH command for Jenkins server"
-  value       = "ssh -i ${var.key_name}.pem ec2-user@${aws_instance.jenkins.public_ip}"
+  value       = "ssh -i ${var.key_name}.pem ec2-user@${module.jenkins.instance_public_ip}"
 }
 
 output "ssh_app" {
   description = "SSH command for App server"
-  value       = "ssh -i ${var.key_name}.pem ec2-user@${aws_instance.app.public_ip}"
+  value       = "ssh -i ${var.key_name}.pem ec2-user@${module.app.instance_public_ip}"
 }
 
 output "ecs_cluster_name" {
