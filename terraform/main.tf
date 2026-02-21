@@ -20,6 +20,20 @@ module "iam" {
   tags         = local.common_tags
 }
 
+module "ecr_backend" {
+  source = "./modules/ecr"
+
+  repository_name = "${var.project_name}-backend"
+  tags            = local.common_tags
+}
+
+module "ecr_frontend" {
+  source = "./modules/ecr"
+
+  repository_name = "${var.project_name}-frontend"
+  tags            = local.common_tags
+}
+
 module "alb" {
   source = "./modules/alb"
 
