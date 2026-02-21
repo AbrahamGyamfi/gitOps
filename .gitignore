@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+build/
+dist/
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# AWS & Terraform
+*.pem
+*.key
+terraform.tfvars
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+*.tfplan
+
+# Security reports
+security-reports/
+*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jenkins
+jenkins-initial-password.txt
+infrastructure-details.txt
+ec2-instances.txt
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# Documentation (except README)
+*.md
+!README.md

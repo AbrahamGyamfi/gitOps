@@ -1,0 +1,53 @@
+# Docker Compose for Production Deployment on EC2
+version: '3.8'
+
+services:
+  taskflow-backend:
+    image: ${REGISTRY_URL:-697863031884.dkr.ecr.eu-west-1.amazonaws.com}/taskflow-backend:${IMAGE_TAG:-latest}
+    container_name: taskflow-backend-prod
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - taskflow-network
+
+  taskflow-frontend:
+    image: ${REGISTRY_URL:-697863031884.dkr.ecr.eu-west-1.amazonaws.com}/taskflow-frontend:${IMAGE_TAG:-latest}
+    container_name: taskflow-frontend-prod
+    ports:
+      - "80:80"
+      - "443:443"  # For HTTPS
+    depends_on:
+      - taskflow-backend
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - taskflow-network
+
+networks:
+  taskflow-network:
+    driver: bridge

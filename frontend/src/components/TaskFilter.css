@@ -1,0 +1,67 @@
+.task-filter-container {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 0.75rem 1.5rem;
+  background: #f0f0f0;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-btn:hover {
+  background: #e8e8e8;
+  border-color: #667eea;
+}
+
+.filter-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: #667eea;
+}
+
+.filter-btn .count {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  min-width: 24px;
+  text-align: center;
+}
+
+.filter-btn.active .count {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 768px) {
+  .task-filter-container {
+    padding: 1rem 1.5rem;
+  }
+
+  .filter-buttons {
+    gap: 0.5rem;
+  }
+
+  .filter-btn {
+    padding: 0.625rem 1rem;
+    font-size: 0.9rem;
+  }
+}

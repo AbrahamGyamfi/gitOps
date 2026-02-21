@@ -1,0 +1,45 @@
+.task-list-container {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.task-list-container h2 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #999;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: #999;
+}
+
+@media (max-width: 768px) {
+  .task-list-container {
+    padding: 1.5rem;
+  }
+}

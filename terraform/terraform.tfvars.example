@@ -1,0 +1,17 @@
+# AWS Configuration
+aws_region = "eu-west-1"
+
+# Project Configuration
+project_name = "taskflow"
+environment  = "production"
+
+# EC2 Instance Types
+jenkins_instance_type = "t3.medium"
+app_instance_type     = "t3.micro"
+
+# SSH Key Pair (must exist in AWS)
+key_name = "taskflow-key"
+
+# Security - Restrict SSH access to your IP
+# allowed_ssh_cidr = "YOUR_IP/32"
+allowed_ssh_cidr = "0.0.0.0/0"
