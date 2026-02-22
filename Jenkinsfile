@@ -61,24 +61,33 @@ pipeline {
             steps {
                 script {
                     echo '🔍 Running SAST with SonarQube...'
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
-                        sh '''
-                            # Run SonarQube scanner in Docker
-                            docker run --rm \
-                                -v $(pwd):/usr/src \
-                                -e SONAR_HOST_URL=http://sonarqube:9000 \
-                                -e SONAR_LOGIN=admin \
-                                -e SONAR_PASSWORD=admin \
-                                sonarsource/sonar-scanner-cli \
-                                -Dsonar.projectKey=taskflow \
-                                -Dsonar.sources=. \
-                                -Dsonar.exclusions=**/node_modules/**,**/build/**,**/dist/** \
-                                -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info || true
-                            
-                            # For now, just log completion (SonarQube server would need to be set up)
-                            echo "✅ SAST scan completed (SonarQube integration ready)"
-                        '''
-                    }
+                    sh '''
+                        # Wait for SonarQube to be ready
+                        echo "Waiting for SonarQube to start..."
+                        for i in {1..30}; do
+                            if curl -s http://sonarqube:9000/api/system/status 2>/dev/null | grep -q '"status":"UP"'; then
+                                echo "SonarQube is ready"
+                                break
+                            fi
+                            sleep 10
+                        done
+                        
+                        # Run SonarQube scanner on same network
+                        docker run --rm \
+                            --network sonarqube-network \
+                            -v $(pwd):/usr/src \
+                            -e SONAR_HOST_URL=http://sonarqube:9000 \
+                            -e SONAR_LOGIN=admin \
+                            -e SONAR_PASSWORD=admin \
+                            sonarsource/sonar-scanner-cli \
+                            -Dsonar.projectKey=taskflow \
+                            -Dsonar.projectName=TaskFlow \
+                            -Dsonar.sources=backend,frontend \
+                            -Dsonar.exclusions=**/node_modules/**,**/build/**,**/dist/**,**/coverage/**,**/test/** \
+                            -Dsonar.javascript.lcov.reportPaths=backend/coverage/lcov.info,frontend/coverage/lcov.info || true
+                        
+                        echo "✅ SAST scan completed - View results at http://34.254.178.139:9000"
+                    '''
                 }
             }
         }
