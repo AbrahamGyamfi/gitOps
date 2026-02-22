@@ -219,7 +219,9 @@ pipeline {
                         script {
                             echo '🐳 Scanning backend container image...'
                             sh '''
-                                docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                                docker run --rm \
+                                    -v /var/run/docker.sock:/var/run/docker.sock \
+                                    -v trivy-cache:/root/.cache/trivy \
                                     aquasec/trivy image --severity HIGH,CRITICAL \
                                     --format json --output ${SCAN_REPORTS_DIR}/backend-image-scan.json \
                                     ${BACKEND_IMAGE}:${IMAGE_TAG} || true
@@ -244,7 +246,9 @@ pipeline {
                         script {
                             echo '🐳 Scanning frontend container image...'
                             sh '''
-                                docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                                docker run --rm \
+                                    -v /var/run/docker.sock:/var/run/docker.sock \
+                                    -v trivy-cache:/root/.cache/trivy \
                                     aquasec/trivy image --severity HIGH,CRITICAL \
                                     --format json --output ${SCAN_REPORTS_DIR}/frontend-image-scan.json \
                                     ${FRONTEND_IMAGE}:${IMAGE_TAG} || true
