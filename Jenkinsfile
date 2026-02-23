@@ -100,7 +100,7 @@ pipeline {
                                 sh '''
                                     # Run OWASP Dependency-Check
                                     docker run --rm \
-                                        -v $(pwd):/src \
+                                        -v "$(pwd)":/src \
                                         -v ~/.m2:/root/.m2 \
                                         owasp/dependency-check:latest \
                                         --scan /src \
@@ -137,7 +137,7 @@ pipeline {
                                 sh '''
                                     # Run OWASP Dependency-Check
                                     docker run --rm \
-                                        -v $(pwd):/src \
+                                        -v "$(pwd)":/src \
                                         -v ~/.m2:/root/.m2 \
                                         owasp/dependency-check:latest \
                                         --scan /src \
