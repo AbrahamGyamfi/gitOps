@@ -1,5 +1,0 @@
-[
-    "arn:aws:ecs:eu-west-1:697863031884:task-definition/taskflow-backend:2",
-    "arn:aws:ecs:eu-west-1:697863031884:task-definition/taskflow-backend:3",
-    "arn:aws:ecs:eu-west-1:697863031884:task-definition/taskflow-backend:4"
-]
