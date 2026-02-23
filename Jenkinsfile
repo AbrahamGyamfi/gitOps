@@ -107,7 +107,7 @@ pipeline {
                                         --format JSON \
                                         --out /src/../${SCAN_REPORTS_DIR} \
                                         --project taskflow-backend \
-                                        --enableExperimental || true
+                                        --enableExperimental
                                     
                                     # Check for critical vulnerabilities
                                     if [ -f ../${SCAN_REPORTS_DIR}/dependency-check-report.json ]; then
@@ -116,8 +116,8 @@ pipeline {
                                         
                                         echo "Backend OWASP DC - Critical: $CRITICAL, High: $HIGH"
                                         
-                                        if [ "$CRITICAL" -gt 0 ]; then
-                                            echo "❌ CRITICAL vulnerabilities found in backend dependencies!"
+                                        if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+                                            echo "❌ Vulnerabilities found in backend dependencies!"
                                             exit 1
                                         fi
                                         
@@ -144,7 +144,7 @@ pipeline {
                                         --format JSON \
                                         --out /src/../${SCAN_REPORTS_DIR} \
                                         --project taskflow-frontend \
-                                        --enableExperimental || true
+                                        --enableExperimental
                                     
                                     # Check for critical vulnerabilities
                                     if [ -f ../${SCAN_REPORTS_DIR}/dependency-check-report.json ]; then
@@ -153,8 +153,8 @@ pipeline {
                                         
                                         echo "Frontend OWASP DC - Critical: $CRITICAL, High: $HIGH"
                                         
-                                        if [ "$CRITICAL" -gt 0 ]; then
-                                            echo "❌ CRITICAL vulnerabilities found in frontend dependencies!"
+                                        if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+                                            echo "❌ Vulnerabilities found in frontend dependencies!"
                                             exit 1
                                         fi
                                         
@@ -224,15 +224,16 @@ pipeline {
                                     -v trivy-cache:/root/.cache/trivy \
                                     aquasec/trivy image --severity HIGH,CRITICAL \
                                     --format json --output ${SCAN_REPORTS_DIR}/backend-image-scan.json \
-                                    ${BACKEND_IMAGE}:${IMAGE_TAG} || true
+                                    ${BACKEND_IMAGE}:${IMAGE_TAG}
                                 
                                 if [ -f ${SCAN_REPORTS_DIR}/backend-image-scan.json ]; then
                                     CRITICAL=$(cat ${SCAN_REPORTS_DIR}/backend-image-scan.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length')
+                                    HIGH=$(cat ${SCAN_REPORTS_DIR}/backend-image-scan.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length')
                                     
-                                    echo "Backend Image - Critical: $CRITICAL"
+                                    echo "Backend Image - Critical: $CRITICAL, High: $HIGH"
                                     
-                                    if [ "$CRITICAL" -gt 0 ]; then
-                                        echo "❌ CRITICAL vulnerabilities in backend image!"
+                                    if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+                                        echo "❌ Vulnerabilities found in backend image!"
                                         exit 1
                                     fi
                                 fi
@@ -251,15 +252,16 @@ pipeline {
                                     -v trivy-cache:/root/.cache/trivy \
                                     aquasec/trivy image --severity HIGH,CRITICAL \
                                     --format json --output ${SCAN_REPORTS_DIR}/frontend-image-scan.json \
-                                    ${FRONTEND_IMAGE}:${IMAGE_TAG} || true
+                                    ${FRONTEND_IMAGE}:${IMAGE_TAG}
                                 
                                 if [ -f ${SCAN_REPORTS_DIR}/frontend-image-scan.json ]; then
                                     CRITICAL=$(cat ${SCAN_REPORTS_DIR}/frontend-image-scan.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length')
+                                    HIGH=$(cat ${SCAN_REPORTS_DIR}/frontend-image-scan.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length')
                                     
-                                    echo "Frontend Image - Critical: $CRITICAL"
+                                    echo "Frontend Image - Critical: $CRITICAL, High: $HIGH"
                                     
-                                    if [ "$CRITICAL" -gt 0 ]; then
-                                        echo "❌ CRITICAL vulnerabilities in frontend image!"
+                                    if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+                                        echo "❌ Vulnerabilities found in frontend image!"
                                         exit 1
                                     fi
                                 fi
