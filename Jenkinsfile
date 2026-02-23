@@ -309,9 +309,12 @@ pipeline {
                             dir('backend') {
                                 sh '''
                                     docker run --rm -v "${WORKSPACE}/backend":/app -w /app node:18-alpine sh -c '
-                                        npm install
-                                        npm test
-                                    '
+                                        npm install && npm test
+                                    ' || {
+                                        echo "❌ Backend tests failed!"
+                                        exit 1
+                                    }
+                                    echo "✅ Backend tests passed"
                                 '''
                             }
                         }
@@ -325,9 +328,12 @@ pipeline {
                             dir('frontend') {
                                 sh '''
                                     docker run --rm -v "${WORKSPACE}/frontend":/app -w /app node:18-alpine sh -c '
-                                        npm install --legacy-peer-deps
-                                        CI=true npm test -- --passWithNoTests
-                                    '
+                                        npm install --legacy-peer-deps && CI=true npm test -- --passWithNoTests
+                                    ' || {
+                                        echo "❌ Frontend tests failed!"
+                                        exit 1
+                                    }
+                                    echo "✅ Frontend tests passed"
                                 '''
                             }
                         }
@@ -470,8 +476,8 @@ pipeline {
                                 sleep 15
                             done
                             
-                            echo "⚠️ Health check failed after 3 attempts, but deployment completed"
-                            exit 0
+                            echo "❌ Health check failed after 3 attempts!"
+                            exit 1
                         '''
                     }
                 }
