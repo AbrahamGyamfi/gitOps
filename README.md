@@ -1,394 +1,273 @@
-# TaskFlow - Task Management Web Application
+# TaskFlow: GitOps CI/CD Hardening Project
 
-[![Jenkins](https://img.shields.io/badge/CI%2FCD-Jenkins-red)](https://jenkins.io/)
-[![Docker](https://img.shields.io/badge/Container-Docker-blue)](https://www.docker.com/)
-[![AWS](https://img.shields.io/badge/Deploy-AWS%20EC2-orange)](https://aws.amazon.com/ec2/)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-Jenkins-red)](https://www.jenkins.io/)
+[![Containers](https://img.shields.io/badge/Container-Docker-blue)](https://www.docker.com/)
+[![Cloud](https://img.shields.io/badge/Cloud-AWS-orange)](https://aws.amazon.com/)
+[![IaC](https://img.shields.io/badge/IaC-Terraform-623CE4)](https://www.terraform.io/)
 
-A lightweight, intuitive task management web application built following Agile principles and DevOps practices.
+TaskFlow is a full-stack task management application used to demonstrate a hardened CI/CD pipeline on AWS.
 
-## Project Overview
+This repository combines:
+- A React frontend and Node.js/Express backend.
+- Security-first Jenkins pipeline design.
+- Container build, scan, and SBOM workflows.
+- AWS infrastructure provisioning with Terraform.
 
-TaskFlow is a full-stack task management application developed as part of an Agile Development project. The application demonstrates:
+## Overview
 
-- **Agile Methodology**: Iterative development across multiple sprints
-- **DevOps Practices**: Complete Jenkins CI/CD pipeline with Docker & EC2 deployment
-- **Modern Web Stack**: React frontend with Node.js/Express backend
-- **Test-Driven Development**: High code coverage with automated tests
-- **Containerization**: Docker multi-stage builds for production deployment
+The project focuses on delivery quality and security gates, not just app features.
 
-## Features
+Key objectives:
+- Build and test both services in isolated Docker environments.
+- Enforce multiple security controls before release.
+- Publish versioned images to ECR.
+- Deploy only from protected branches to ECS.
+- Keep pipeline logic modular and maintainable.
 
-### Sprint 1 Features (Completed)
-- **US-001**: Create tasks with title and description
-- **US-002**: View all tasks in a organized list
-- **US-003**: Mark tasks as complete/incomplete
+## Core Features
 
-### Sprint 2 Features (Completed)
-- **US-004**: Delete tasks with confirmation
-- **US-005**: Edit existing task details
-- **US-006**: Filter tasks by status (All/Active/Completed)
+Application features:
+- Create, list, edit, complete, and delete tasks.
+- Filter tasks by status (All, Active, Completed).
+- Health endpoint for service monitoring (`/health`).
 
-## Technology Stack
+Platform/DevOps features:
+- Parallelized build, test, and scan stages.
+- Secret scanning (Gitleaks), SAST (SonarQube), SCA (OWASP Dependency-Check), image scanning (Trivy), SBOM generation (Syft).
+- Branch-gated release (`main`/`master` only, no PR releases).
+- ECS rollout, stability wait, ALB health verification, and task definition cleanup.
 
-### Frontend
-- React 18
-- CSS3 (with CSS Modules)
-- Fetch API for HTTP requests
+## Architecture
 
-### Backend
-- Node.js
-- Express.js
-- UUID for unique identifiers
-- CORS for cross-origin requests
+Application:
+- Frontend: React 18 + Nginx container.
+- Backend: Node.js + Express REST API.
+- Data store: In-memory array (non-persistent by design).
 
-### DevOps & Testing
-- Jest for unit and integration testing
-- Supertest for API testing
-- **Jenkins** for complete CI/CD pipeline
-- **Docker** for containerization
-- **AWS EC2** for production deployment
-- ESLint for code quality
+Delivery:
+- Jenkins pipeline orchestrates verification and release.
+- Docker images are built/tagged as `build-<BUILD_NUMBER>` and `latest`.
+- Images are pushed to AWS ECR.
+- ECS services are updated with new task definition revisions.
 
-## Installation & Setup
+Infrastructure (Terraform):
+- Jenkins EC2 instance.
+- Additional app EC2 instance.
+- ECR repositories (backend/frontend).
+- ECS services (backend/frontend).
+- ALB + target groups.
+- IAM roles and CloudWatch log groups.
 
-### Prerequisites
-- Node.js 18+ and npm
-- Git
-- Docker (for containerized deployment)
-- Jenkins (for CI/CD pipeline)
+## Repository Structure
 
-## Installation & Setup
-
-### Prerequisites
-- Node.js 18+ and npm
-- Git
-- Docker (for containerized deployment)
-- Jenkins (for CI/CD pipeline)
-
-### Project Structure & Running Apps
-
-This repository uses a monorepo layout with both backend and frontend apps in their own folders.
-There is **no package.json at the project root**.
-**All npm commands should be run in the appropriate subdirectory.**
-
-```
-Jenkins-project/
-├── backend/    # Node.js/Express server
-└── frontend/   # React app
+```text
+.
+├── Jenkinsfile
+├── backend/
+├── frontend/
+├── jenkins/
+│   └── scripts/
+├── terraform/
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── provision-all.sh
+└── test-vulnerable-dependency.sh
 ```
 
-### Installation Steps
+## Prerequisites
 
-1. **Clone the repository**
-    ```bash
-    git clone https://github.com/AbrahamGyamfi/Jenkins-project.git
-    cd Jenkins-project
-    ```
+Local development:
+- Node.js 18+
+- npm
 
-2. **Install backend dependencies**
-    ```bash
-    cd backend
-    npm install
-    ```
+Container and pipeline workflows:
+- Docker
+- `jq` (used by scan and deploy scripts)
+- AWS CLI (for release/deploy operations)
 
-3. **Install frontend dependencies**
-    ```bash
-    cd ../frontend
-    npm install
-    ```
+Infrastructure provisioning:
+- Terraform >= 1.0
 
-### Running the Backend Server
-(from the project root)
+## Quick Start
+
+### 1. Clone Repository
+
+```bash
+git clone git@github.com:AbrahamGyamfi/gitOps.git
+cd gitOps
+```
+
+### 2. Run Locally (Node.js)
+
+Backend:
+
 ```bash
 cd backend
+npm install
 npm start
-# Server runs on http://localhost:5000
 ```
 
-### Running the Frontend App
-(from the project root)
+Frontend (new terminal):
+
 ```bash
 cd frontend
+npm install
 npm start
-# Frontend runs on http://localhost:3000
 ```
 
-### Running Tests
+Access:
+- Frontend: `http://localhost:3000`
+- Backend health: `http://localhost:5000/health`
 
-- **Backend tests**
-    ```bash
-    cd backend
-    npm test
-    ```
-    To run with coverage:
-    ```bash
-    npm test -- --coverage
-    ```
+### 3. Run with Docker Compose
 
-- **Frontend tests**
-    ```bash
-    cd frontend
-    npm test
-    ```
-    To run with coverage:
-    ```bash
-    npm test -- --coverage
-    ```
+```bash
+docker compose up --build
+```
 
-### Access the Application
-
-Open your browser and navigate to [http://localhost:3000](http://localhost:3000)
+Access:
+- Frontend: `http://localhost`
+- Backend health: `http://localhost:5000/health`
 
 ## Testing
 
-### Run all tests
+Backend tests:
+
 ```bash
+cd backend
 npm test
 ```
 
-### Run tests with coverage
-```bash
-npm test -- --coverage
-```
+Frontend tests:
 
-### Test Coverage Goals
-- Minimum 80% code coverage across all metrics
-- All tests must pass before merging to main branch
-
-## CI/CD Pipeline (Jenkins)
-
-The project implements a complete end-to-end Jenkins CI/CD pipeline that builds, tests, containerizes, and deploys the application to AWS EC2.
-
-### Live Infrastructure
-- **Production App**: http://34.245.23.234/ (EC2 t3.micro)
-- **AWS Region**: eu-west-1 (Ireland)
-- **Registry**: AWS ECR (697863031884.dkr.ecr.eu-west-1.amazonaws.com)
-
-### Pipeline Stages
-1. **Checkout**: Clone repository from GitHub
-2. **Build Docker Images**: Build backend and frontend containers in parallel
-3. **Run Unit Tests**: Execute backend (Jest+Supertest) and frontend (React Testing Library) tests in Docker containers
-4. **Code Quality**: Run ESLint and verify Docker images
-5. **Integration Tests**: Test live API endpoints with containerized backend
-6. **Push to ECR**: Upload images to AWS ECR with build number tags
-7. **Deploy to EC2**: SSH deployment to production server with docker-compose
-8. **Health Check**: Verify application is running and responsive
-9. **Cleanup**: Remove old Docker images and containers
-
-### Key Features
-- Containerized test execution (tests run inside Docker, not on Jenkins host)
-- Parallel build and test stages for faster execution (~2-3 minutes)
-- Health checks before and after deployment
-- AWS ECR integration for secure image storage
-- Separate backend and frontend Docker images
-- Image versioning with build numbers and latest tags
-- Automated cleanup to prevent disk space issues
-
-### Test Execution
-All tests run inside Docker containers to ensure consistency:
-
-**Backend Tests** (16 tests):
-```bash
-docker run --rm -v $(pwd):/app -w /app node:18-alpine sh -c 'npm install && npm test'
-```
-- Health check endpoint
-- GET/POST/PATCH/PUT/DELETE /api/tasks
-- Validation tests (required fields, length limits)
-- Error handling (404, 400 responses)
-
-**Frontend Tests** (8 tests):
-```bash
-docker run --rm -v $(pwd):/app -w /app node:18-alpine sh -c 'npm install --legacy-peer-deps && CI=true npm test'
-```
-- Component rendering
-- Form submission and user interactions
-- Task filtering (All/Active/Completed)
-- API integration and error handling
-
-## Docker Deployment
-
-### Separate Backend and Frontend Images
-
-**Backend Image** (Node.js + Express):
-```bash
-cd backend
-docker build -t taskflow-backend .
-# Image size: 202MB (node:18-alpine base)
-```
-
-**Frontend Image** (React + Nginx):
 ```bash
 cd frontend
-docker build -t taskflow-frontend .
-# Image size: 93.3MB (multi-stage: node build → nginx serve)
+npm test
 ```
 
-### Run Containers Locally
-```bash
-# Backend
-docker run -d -p 5000:5000 --name taskflow-backend taskflow-backend
-
-# Frontend
-docker run -d -p 80:80 --name taskflow-frontend taskflow-frontend
-```
-
-### Using Docker Compose
-```bash
-# Development
-docker-compose up -d
-
-# Production (on EC2)
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-### Production Deployment (EC2)
-Images are pulled from AWS ECR:
-```bash
-# Login to ECR
-aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 697863031884.dkr.ecr.eu-west-1.amazonaws.com
-
-# Pull latest images
-docker pull 697863031884.dkr.ecr.eu-west-1.amazonaws.com/taskflow-backend:latest
-docker pull 697863031884.dkr.ecr.eu-west-1.amazonaws.com/taskflow-frontend:latest
-
-# Deploy with docker-compose
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-### Health Checks
-```bash
-# Local
-curl http://localhost:5000/health
-curl http://localhost/health
-
-# Production
-curl http://54.170.165.207/health
-```
-
-**Response**:
-```json
-{
-  "status": "healthy",
-  "timestamp": "2026-02-16T10:30:00.000Z",
-  "tasksCount": 0
-}
-```
-
-## Project Structure
-
-```
-Agile_development/
-├── backend/
-│   ├── server.js              # Express server and API routes
-│   ├── server.test.js         # Backend unit tests (16 tests: CRUD + validation)
-│   ├── Dockerfile             # Backend container (node:18-alpine)
-│   └── package.json           # Backend dependencies
-├── frontend/
-│   ├── public/
-│   │   └── index.html         # HTML template
-│   ├── src/
-│   │   ├── components/        # React components
-│   │   │   ├── TaskForm.js
-│   │   │   ├── TaskList.js
-│   │   │   ├── TaskItem.js
-│   │   │   └── TaskFilter.js
-│   │   ├── App.js             # Main application component
-│   │   ├── App.test.js        # Frontend tests (8 tests: rendering + interactions)
-│   │   ├── setupTests.js      # Jest configuration for React Testing Library
-│   │   ├── App.css            # Global styles
-│   │   └── index.js           # React entry point
-│   ├── Dockerfile             # Frontend container (multi-stage: build + nginx)
-│   ├── nginx.conf             # Nginx configuration (SPA routing + API proxy)
-│   └── package.json           # Frontend dependencies
-├── Jenkinsfile                # Jenkins pipeline (8 stages, containerized tests)
-├── docker-compose.yml         # Docker compose for development
-├── docker-compose.prod.yml    # Docker compose for production (ECR images)
-├── provision-ec2.sh           # AWS EC2 provisioning script
-├── JENKINS_SETUP.md           # Complete Jenkins setup guide
-├── CI_CD_EVIDENCE.md          # Build #18 logs, test results, deployment evidence
-├── AWS_PROVISIONING.md        # AWS infrastructure documentation
-├── docs/                      # Documentation directory
-│   ├── SPRINT_0_PLANNING.md   # Sprint 0 planning documents
-│   ├── SPRINT_1_REVIEW.md     # Sprint 1 review and retrospective
-│   └── SPRINT_2_REVIEW.md     # Sprint 2 review and retrospective
-└── README.md                  # This file
-```
-
-## Agile Process
-
-### Sprint Structure
-- **Sprint 0**: Planning and setup
-- **Sprint 1**: Core features + CI/CD setup
-- **Sprint 2**: Additional features + monitoring
-
-### Sprint Documents
-- [Sprint 0 Planning](docs/SPRINT_0_PLANNING.md)
-- [Sprint 1 Review & Retrospective](docs/SPRINT_1_REVIEW.md)
-- [Sprint 2 Review & Retrospective](docs/SPRINT_2_REVIEW.md)
-
-### Definition of Done
-1. Code complete and reviewed
-2. All tests passing with >80% coverage
-3. CI pipeline green
-4. Feature works per acceptance criteria
-5. Code follows quality standards
-6. Documentation updated
-7. No critical bugs
+Current test files:
+- `backend/server.test.js`
+- `frontend/src/App.test.js`
 
 ## API Endpoints
 
-### Tasks
-- `POST /api/tasks` - Create a new task
-- `GET /api/tasks` - Get all tasks
-- `PATCH /api/tasks/:id` - Update task status
-- `PUT /api/tasks/:id` - Edit task details
-- `DELETE /api/tasks/:id` - Delete a task
+- `GET /health`
+- `GET /api/tasks`
+- `POST /api/tasks`
+- `PATCH /api/tasks/:id`
+- `PUT /api/tasks/:id`
+- `DELETE /api/tasks/:id`
 
-### Monitoring
-- `GET /health` - Health check endpoint
+## CI/CD Pipeline
 
-## Development Guidelines
+Pipeline definition:
+- `Jenkinsfile`
 
-### Branching Strategy
-- `main` - Production-ready code
-- `develop` - Integration branch
-- `feature/*` - Feature branches
-- `bugfix/*` - Bug fix branches
+Execution model:
+- Thin Jenkins orchestration layer.
+- Operational logic delegated to `jenkins/scripts/*.sh`.
 
-### Commit Message Format
+Main stages:
+1. Checkout
+2. Secret Scan (Gitleaks)
+3. Run Tests (backend/frontend in parallel)
+4. SAST - SonarQube (with quality gate check)
+5. SCA - OWASP Dependency-Check (parallel)
+6. Build Docker Images (parallel)
+7. Container Security Scanning - Trivy (parallel)
+8. Generate SBOM - Syft (parallel)
+9. Release to ECS (`main`/`master` only)
+
+Post actions:
+- Archive `security-reports/**`
+- Remove local build-tagged images
+
+## Security Controls
+
+The pipeline is fail-closed for security gates:
+- Secrets found: build fails.
+- Sonar quality gate not `OK`: build fails.
+- High/Critical dependency vulnerabilities: build fails.
+- High/Critical container vulnerabilities: build fails.
+
+Artifacts generated under `security-reports/`:
+- Gitleaks report
+- OWASP Dependency-Check reports
+- Trivy scan reports
+- CycloneDX SBOM files
+
+## Screenshots
+
+Security and quality:
+
+![Secret scanning result](screenshots/secret_scanning.png)
+![SonarQube dashboard](screenshots/SonarQube.png)
+
+Container and supply chain:
+
+![ECR repositories](screenshots/ERC_Repos.png)
+![ECR service view](screenshots/ECR_service.png)
+![Backend SBOM](screenshots/backend_SBOM.png)
+![Frontend SBOM](screenshots/Frontend_SBOM.png)
+
+ECS deployment evidence:
+
+![Task definition overview](screenshots/TaskDefinition.png)
+![Task definition image mapping](screenshots/TaskDefinition_container_Image.png)
+![Revised task definition](screenshots/taskDefinition_Revised.png)
+
+## Jenkins Configuration
+
+Required Jenkins credentials:
+- `aws-credentials` (AWS credentials binding)
+- `aws-region` (Secret text)
+- `aws-account-id` (Secret text)
+- `sonarqube-credentials` (Username/Password)
+
+Pipeline job:
+- Type: Pipeline from SCM
+- Script path: `Jenkinsfile`
+
+Agent requirements:
+- Docker available to Jenkins user
+- AWS CLI and `jq` installed
+
+## Terraform Infrastructure
+
+Terraform root:
+- `terraform/`
+
+Typical flow:
+
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform plan
+terraform apply
 ```
-<type>: <subject>
 
-<body>
+Helpful outputs:
+- `jenkins_url`
+- `alb_url`
+- `ecr_backend_repository_url`
+- `ecr_frontend_repository_url`
+- `ecs_cluster_name`
 
-Example:
-feat: Add task filtering by status (US-006)
+Detailed notes:
+- `terraform/README.md`
 
-Implemented filter component with All, Active, and Completed tabs
-```
+## Useful Scripts
 
-### Commit Types
-- `feat`: New feature
-- `fix`: Bug fix
-- `test`: Adding or updating tests
-- `docs`: Documentation changes
-- `refactor`: Code refactoring
-- `style`: Code style changes
-- `chore`: Build or auxiliary tool changes
+- `provision-all.sh`: end-to-end infrastructure bootstrap helper.
+- `test-vulnerable-dependency.sh`: injects and removes a known vulnerable dependency to validate SCA blocking behavior.
 
-## Learning Outcomes
+## Known Limitations
 
-This project demonstrates:
-1. Application of Agile principles (user stories, sprints, retrospectives)
-2. DevOps practices (CI/CD, automated testing, monitoring)
-3. Iterative development with incremental delivery
-4. Test-driven development approach
-5. Git workflow with meaningful commit history
-6. Code quality and documentation standards
+- Backend persistence is in-memory; data is lost on restart.
+- Some helper scripts/docs may need environment-specific updates before production use.
+- If you enforce `npm ci` in CI, commit lock files for deterministic installs.
 
+## License
 
-
-
-**Project Date**: February 2026  
-**Version**: 1.0.0  
-**Status**: Completed  
+This repository is intended for learning and portfolio demonstration unless otherwise specified by the owner.
