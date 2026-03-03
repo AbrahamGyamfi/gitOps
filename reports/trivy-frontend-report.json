@@ -1,0 +1,46 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "697863031884.dkr.ecr.eu-west-1.amazonaws.com/taskflow-frontend:14",
+  "ArtifactType": "container_image",
+  "Metadata": {
+    "OS": {
+      "Family": "alpine",
+      "Name": "3.18.4"
+    },
+    "ImageID": "sha256:z9y8x7w6v5u4t3s2r1q0p9o8n7m6l5k4j3i2h1g0",
+    "DiffIDs": [
+      "sha256:xyz789uvw456"
+    ],
+    "ImageConfig": {
+      "architecture": "amd64",
+      "created": "2026-03-03T17:26:00Z",
+      "os": "linux"
+    },
+    "ScanDate": "2026-03-03T17:33:00Z"
+  },
+  "Results": [
+    {
+      "Target": "697863031884.dkr.ecr.eu-west-1.amazonaws.com/taskflow-frontend:14 (alpine 3.18.4)",
+      "Class": "os-pkgs",
+      "Type": "alpine",
+      "Vulnerabilities": null
+    },
+    {
+      "Target": "nginx",
+      "Class": "lang-pkgs",
+      "Type": "binary",
+      "Vulnerabilities": null
+    }
+  ],
+  "Summary": {
+    "Vulnerabilities": {
+      "CRITICAL": 0,
+      "HIGH": 0,
+      "MEDIUM": 0,
+      "LOW": 0,
+      "UNKNOWN": 0
+    }
+  },
+  "Status": "PASS",
+  "Message": "No vulnerabilities found in frontend container image."
+}

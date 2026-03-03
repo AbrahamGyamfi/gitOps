@@ -15,13 +15,18 @@ function App() {
 
   // US-002: Fetch tasks on component mount
   useEffect(() => {
-    fetchTasks();
+    const controller = new AbortController();
+    fetchTasks(controller.signal);
+
+    return () => {
+      controller.abort();
+    };
   }, []);
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (signal) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/tasks`);
+      const response = await fetch(`${API_URL}/tasks`, { signal });
       if (!response.ok) {
         throw new Error('Failed to fetch tasks');
       }
@@ -29,6 +34,9 @@ function App() {
       setTasks(data);
       setError(null);
     } catch (err) {
+      if (err.name === 'AbortError') {
+        return;
+      }
       console.error('Error fetching tasks:', err);
       setError('Failed to load tasks. Please try again.');
     } finally {
@@ -53,7 +61,7 @@ function App() {
       }
 
       const newTask = await response.json();
-      setTasks([newTask, ...tasks]);
+      setTasks((prevTasks) => [newTask, ...prevTasks]);
       showNotification('Task created successfully!', 'success');
       return true;
     } catch (err) {
@@ -80,9 +88,9 @@ function App() {
       }
 
       const updatedTask = await response.json();
-      setTasks(tasks.map(task => 
-        task.id === taskId ? updatedTask : task
-      ));
+      setTasks((prevTasks) =>
+        prevTasks.map((task) => (task.id === taskId ? updatedTask : task))
+      );
       showNotification('Task status updated!', 'success');
     } catch (err) {
       console.error('Error updating task:', err);
@@ -106,7 +114,7 @@ function App() {
         throw new Error('Failed to delete task');
       }
 
-      setTasks(tasks.filter(task => task.id !== taskId));
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
       showNotification('Task deleted successfully!', 'success');
     } catch (err) {
       console.error('Error deleting task:', err);
@@ -132,9 +140,9 @@ function App() {
       }
 
       const updatedTask = await response.json();
-      setTasks(tasks.map(task => 
-        task.id === taskId ? updatedTask : task
-      ));
+      setTasks((prevTasks) =>
+        prevTasks.map((task) => (task.id === taskId ? updatedTask : task))
+      );
       showNotification('Task updated successfully!', 'success');
       return true;
     } catch (err) {

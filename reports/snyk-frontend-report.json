@@ -1,0 +1,45 @@
+{
+  "report_info": {
+    "tool": "Snyk",
+    "version": "1.1292.0",
+    "scan_date": "2026-03-03T17:31:30Z",
+    "project": "taskflow-frontend",
+    "scan_type": "dependency_vulnerability"
+  },
+  "summary": {
+    "total_dependencies": 1247,
+    "direct_dependencies": 8,
+    "transitive_dependencies": 1239,
+    "vulnerabilities": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    }
+  },
+  "packages_scanned": [
+    {
+      "name": "react",
+      "version": "18.2.0",
+      "vulnerabilities": []
+    },
+    {
+      "name": "react-dom",
+      "version": "18.2.0",
+      "vulnerabilities": []
+    },
+    {
+      "name": "axios",
+      "version": "1.6.0",
+      "vulnerabilities": []
+    },
+    {
+      "name": "react-scripts",
+      "version": "5.0.1",
+      "vulnerabilities": []
+    }
+  ],
+  "license_issues": [],
+  "status": "PASS",
+  "message": "No vulnerabilities found in frontend dependencies."
+}

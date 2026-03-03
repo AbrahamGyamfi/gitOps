@@ -1,0 +1,44 @@
+groups:
+  - name: taskflow_observability_alerts
+    interval: 30s
+    rules:
+      - alert: TaskflowHighErrorRate
+        expr: |
+          (
+            sum(rate(taskflow_http_errors_total{route!="/metrics"}[5m]))
+            /
+            clamp_min(sum(rate(taskflow_http_requests_total{route!="/metrics"}[5m])), 0.001)
+          ) * 100 > 5
+          and
+          sum(rate(taskflow_http_requests_total{route!="/metrics"}[5m])) > 0
+        for: 10m
+        labels:
+          severity: critical
+          service: taskflow-backend
+        annotations:
+          summary: "TaskFlow error rate above 5% for 10 minutes"
+          description: "Error rate is {{ $value }}% (threshold: 5%)"
+
+      - alert: TaskflowHighLatency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(taskflow_http_request_duration_seconds_bucket{route!="/metrics"}[5m])) by (le)
+          ) > 0.3
+        for: 10m
+        labels:
+          severity: critical
+          service: taskflow-backend
+        annotations:
+          summary: "TaskFlow p95 latency above 300ms for 10 minutes"
+          description: "Current p95 latency is {{ $value }}s (threshold: 0.3s)"
+
+      - alert: TaskflowServiceDown
+        expr: up{job="taskflow-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: taskflow-backend
+        annotations:
+          summary: "TaskFlow backend target is down"
+          description: "Prometheus target taskflow-backend is not reachable"

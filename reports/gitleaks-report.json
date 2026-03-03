@@ -1,0 +1,18 @@
+{
+  "report_info": {
+    "tool": "Gitleaks",
+    "version": "8.18.0",
+    "scan_date": "2026-03-03T17:30:00Z",
+    "project": "taskflow-app",
+    "repository": "https://github.com/AbrahamGyamfi/Advance_monitoring_Jaeger.git"
+  },
+  "summary": {
+    "total_findings": 0,
+    "secrets_detected": 0,
+    "files_scanned": 87,
+    "commits_scanned": 25
+  },
+  "findings": [],
+  "status": "PASS",
+  "message": "No secrets detected in the codebase. All sensitive credentials are properly managed through Jenkins credentials store and AWS Secrets Manager."
+}

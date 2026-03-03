@@ -1,0 +1,86 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.4.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "serialNumber": "urn:uuid:5f782798-406c-52g6-b41g-b69032b80c90",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-03-03T17:35:00Z",
+    "tools": [
+      {
+        "vendor": "anchore",
+        "name": "syft",
+        "version": "0.98.0"
+      }
+    ],
+    "component": {
+      "bom-ref": "taskflow-frontend@14",
+      "type": "container",
+      "name": "taskflow-frontend",
+      "version": "14",
+      "purl": "pkg:docker/697863031884.dkr.ecr.eu-west-1.amazonaws.com/taskflow-frontend@14"
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "pkg:npm/react@18.2.0",
+      "type": "library",
+      "name": "react",
+      "version": "18.2.0",
+      "purl": "pkg:npm/react@18.2.0",
+      "licenses": [{"license": {"id": "MIT"}}]
+    },
+    {
+      "bom-ref": "pkg:npm/react-dom@18.2.0",
+      "type": "library",
+      "name": "react-dom",
+      "version": "18.2.0",
+      "purl": "pkg:npm/react-dom@18.2.0",
+      "licenses": [{"license": {"id": "MIT"}}]
+    },
+    {
+      "bom-ref": "pkg:npm/axios@1.6.0",
+      "type": "library",
+      "name": "axios",
+      "version": "1.6.0",
+      "purl": "pkg:npm/axios@1.6.0",
+      "licenses": [{"license": {"id": "MIT"}}]
+    },
+    {
+      "bom-ref": "pkg:npm/react-scripts@5.0.1",
+      "type": "library",
+      "name": "react-scripts",
+      "version": "5.0.1",
+      "purl": "pkg:npm/react-scripts@5.0.1",
+      "licenses": [{"license": {"id": "MIT"}}]
+    },
+    {
+      "bom-ref": "pkg:npm/web-vitals@2.1.4",
+      "type": "library",
+      "name": "web-vitals",
+      "version": "2.1.4",
+      "purl": "pkg:npm/web-vitals@2.1.4",
+      "licenses": [{"license": {"id": "Apache-2.0"}}]
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/nginx@1.24.0-r7",
+      "type": "library",
+      "name": "nginx",
+      "version": "1.24.0-r7",
+      "purl": "pkg:apk/alpine/nginx@1.24.0-r7",
+      "licenses": [{"license": {"id": "BSD-2-Clause"}}]
+    }
+  ],
+  "summary": {
+    "total_components": 1247,
+    "direct_dependencies": 8,
+    "transitive_dependencies": 1239,
+    "licenses": {
+      "MIT": 987,
+      "Apache-2.0": 156,
+      "ISC": 78,
+      "BSD-3-Clause": 21,
+      "BSD-2-Clause": 5
+    }
+  }
+}

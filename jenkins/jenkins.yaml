@@ -1,0 +1,182 @@
+jenkins:
+  systemMessage: "TaskFlow CI/CD - ECS Fargate + CodeDeploy"
+  numExecutors: 2
+  mode: NORMAL
+  
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+          
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+  remotingSecurity:
+    enabled: true
+
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: false
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          # AWS Configuration
+          - string:
+              scope: GLOBAL
+              id: "aws-region"
+              secret: "${AWS_REGION}"
+              description: "AWS Region"
+          - string:
+              scope: GLOBAL
+              id: "aws-account-id"
+              secret: "${AWS_ACCOUNT_ID}"
+              description: "AWS Account ID"
+          - aws:
+              scope: GLOBAL
+              id: "aws-credentials"
+              accessKey: "${AWS_ACCESS_KEY_ID}"
+              secretKey: "${AWS_SECRET_ACCESS_KEY}"
+              description: "AWS Credentials for ECR, ECS, CodeDeploy"
+          
+          # ECS/Fargate Configuration
+          - string:
+              scope: GLOBAL
+              id: "ecs-cluster-name"
+              secret: "taskflow-cluster"
+              description: "ECS Cluster Name"
+          - string:
+              scope: GLOBAL
+              id: "ecs-service-backend"
+              secret: "taskflow-backend"
+              description: "ECS Backend Service Name"
+          - string:
+              scope: GLOBAL
+              id: "ecs-service-frontend"
+              secret: "taskflow-frontend"
+              description: "ECS Frontend Service Name"
+          
+          # CodeDeploy Configuration
+          - string:
+              scope: GLOBAL
+              id: "codedeploy-app-name"
+              secret: "taskflow-app"
+              description: "CodeDeploy Application Name"
+          - string:
+              scope: GLOBAL
+              id: "codedeploy-deployment-group"
+              secret: "taskflow-blue-green"
+              description: "CodeDeploy Frontend Deployment Group"
+          - string:
+              scope: GLOBAL
+              id: "codedeploy-backend-deployment-group"
+              secret: "taskflow-backend-blue-green"
+              description: "CodeDeploy Backend Deployment Group"
+          
+          # ALB Configuration
+          - string:
+              scope: GLOBAL
+              id: "alb-dns-name"
+              secret: "taskflow-alb-2078476769.eu-west-1.elb.amazonaws.com"
+              description: "ALB DNS Name for health checks"
+          
+          # Monitoring Configuration
+          - string:
+              scope: GLOBAL
+              id: "monitoring-host"
+              secret: "${MONITORING_HOST}"
+              description: "Monitoring Server IP"
+
+          # Application Configuration
+          - string:
+              scope: GLOBAL
+              id: "app-name"
+              secret: "taskflow"
+              description: "Application Name"
+          - string:
+              scope: GLOBAL
+              id: "node-version"
+              secret: "18"
+              description: "Node.js Version"
+          - string:
+              scope: GLOBAL
+              id: "app-port"
+              secret: "5000"
+              description: "Application Port"
+          - string:
+              scope: GLOBAL
+              id: "integration-test-port"
+              secret: "5001"
+              description: "Integration Test Port"
+          - string:
+              scope: GLOBAL
+              id: "health-check-timeout"
+              secret: "60"
+              description: "Health Check Timeout (seconds)"
+          - string:
+              scope: GLOBAL
+              id: "health-check-interval"
+              secret: "5"
+              description: "Health Check Interval (seconds)"
+          
+          # Security Scanning Tokens
+          - string:
+              scope: GLOBAL
+              id: "sonar-token"
+              secret: "${SONAR_TOKEN}"
+              description: "SonarCloud Authentication Token"
+          - string:
+              scope: GLOBAL
+              id: "sonar-organization"
+              secret: "${SONAR_ORGANIZATION}"
+              description: "SonarCloud Organization"
+          - string:
+              scope: GLOBAL
+              id: "sonar-host-url"
+              secret: "https://sonarcloud.io"
+              description: "SonarCloud Host URL"
+          - string:
+              scope: GLOBAL
+              id: "snyk-token"
+              secret: "${SNYK_TOKEN}"
+              description: "Snyk API Token"
+
+unclassified:
+  location:
+    url: "http://${JENKINS_HOST}:8080/"
+    adminAddress: "admin@taskflow.local"
+  
+  gitHubPluginConfig:
+    hookUrl: "http://${JENKINS_HOST}:8080/github-webhook/"
+
+jobs:
+  - script: >
+      pipelineJob('taskflow-pipeline') {
+        description('TaskFlow CI/CD Pipeline - ECS Fargate Blue-Green Deployment')
+        
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('${GITHUB_REPO_URL}')
+                }
+                branch('*/main')
+              }
+            }
+            scriptPath('Jenkinsfile')
+          }
+        }
+        
+        triggers {
+          githubPush()
+        }
+        
+        properties {
+          disableConcurrentBuilds()
+        }
+      }

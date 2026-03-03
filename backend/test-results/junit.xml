@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="13" failures="0" errors="0" time="1.868">
+  <testsuite name="server.test.js" errors="0" failures="0" skipped="0" timestamp="2026-02-24T16:00:17" time="1.523" tests="13">
+    <testcase classname="TaskFlow API Tests › GET /health" name="should return healthy status" time="0.074">
+    </testcase>
+    <testcase classname="TaskFlow API Tests › GET /api/system/overview" name="should include internal health payload" time="0.011">
+    </testcase>
+    <testcase classname="TaskFlow API Tests › POST /api/tasks" name="should create a new task" time="0.018">
+    </testcase>
+    <testcase classname="TaskFlow API Tests › POST /api/tasks" name="should reject empty title" time="0.005">
+    </testcase>
+    <testcase classname="TaskFlow API Tests › GET /api/tasks" name="should return empty array initially" time="0.007">
+    </testcase>
+    <testcase classname="TaskFlow API Tests › GET /api/tasks" name="should return tasks in newest-first order" time="0.024">
+    </testcase>
+    <testcase classname="TaskFlow API Tests › GET /api/tasks" name="should support response delay injection for latency testing" time="0.128">
+    </testcase>
+    <testcase classname="TaskFlow API Tests › PATCH /api/tasks/:id" name="should update task completion status" time="0.01">
+    </testcase>
+    <testcase classname="TaskFlow API Tests › PATCH /api/tasks/:id" name="should return 400 for invalid completion value" time="0.008">
+    </testcase>
+    <testcase classname="TaskFlow API Tests › PUT /api/tasks/:id" name="should update a task title and description" time="0.009">
+    </testcase>
+    <testcase classname="TaskFlow API Tests › DELETE /api/tasks/:id" name="should delete a task" time="0.012">
+    </testcase>
+    <testcase classname="TaskFlow API Tests › DELETE /api/tasks/:id" name="should return 404 for non-existent task" time="0.004">
+    </testcase>
+    <testcase classname="TaskFlow API Tests › GET /metrics" name="should expose Prometheus RED metrics" time="0.015">
+    </testcase>
+  </testsuite>
+</testsuites>

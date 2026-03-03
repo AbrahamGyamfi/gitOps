@@ -1,0 +1,109 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.4.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "serialNumber": "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-03-03T17:34:00Z",
+    "tools": [
+      {
+        "vendor": "anchore",
+        "name": "syft",
+        "version": "0.98.0"
+      }
+    ],
+    "component": {
+      "bom-ref": "taskflow-backend@14",
+      "type": "container",
+      "name": "taskflow-backend",
+      "version": "14",
+      "purl": "pkg:docker/697863031884.dkr.ecr.eu-west-1.amazonaws.com/taskflow-backend@14"
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "pkg:npm/express@4.18.2",
+      "type": "library",
+      "name": "express",
+      "version": "4.18.2",
+      "purl": "pkg:npm/express@4.18.2",
+      "licenses": [{"license": {"id": "MIT"}}]
+    },
+    {
+      "bom-ref": "pkg:npm/prom-client@14.2.0",
+      "type": "library",
+      "name": "prom-client",
+      "version": "14.2.0",
+      "purl": "pkg:npm/prom-client@14.2.0",
+      "licenses": [{"license": {"id": "Apache-2.0"}}]
+    },
+    {
+      "bom-ref": "pkg:npm/winston@3.11.0",
+      "type": "library",
+      "name": "winston",
+      "version": "3.11.0",
+      "purl": "pkg:npm/winston@3.11.0",
+      "licenses": [{"license": {"id": "MIT"}}]
+    },
+    {
+      "bom-ref": "pkg:npm/cors@2.8.5",
+      "type": "library",
+      "name": "cors",
+      "version": "2.8.5",
+      "purl": "pkg:npm/cors@2.8.5",
+      "licenses": [{"license": {"id": "MIT"}}]
+    },
+    {
+      "bom-ref": "pkg:npm/uuid@9.0.0",
+      "type": "library",
+      "name": "uuid",
+      "version": "9.0.0",
+      "purl": "pkg:npm/uuid@9.0.0",
+      "licenses": [{"license": {"id": "MIT"}}]
+    },
+    {
+      "bom-ref": "pkg:npm/@opentelemetry/api@1.4.1",
+      "type": "library",
+      "name": "@opentelemetry/api",
+      "version": "1.4.1",
+      "purl": "pkg:npm/%40opentelemetry/api@1.4.1",
+      "licenses": [{"license": {"id": "Apache-2.0"}}]
+    },
+    {
+      "bom-ref": "pkg:npm/@opentelemetry/sdk-node@0.41.0",
+      "type": "library",
+      "name": "@opentelemetry/sdk-node",
+      "version": "0.41.0",
+      "purl": "pkg:npm/%40opentelemetry/sdk-node@0.41.0",
+      "licenses": [{"license": {"id": "Apache-2.0"}}]
+    },
+    {
+      "bom-ref": "pkg:npm/@opentelemetry/exporter-jaeger@1.15.0",
+      "type": "library",
+      "name": "@opentelemetry/exporter-jaeger",
+      "version": "1.15.0",
+      "purl": "pkg:npm/%40opentelemetry/exporter-jaeger@1.15.0",
+      "licenses": [{"license": {"id": "Apache-2.0"}}]
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/nodejs@18.18.2-r0",
+      "type": "library",
+      "name": "nodejs",
+      "version": "18.18.2-r0",
+      "purl": "pkg:apk/alpine/nodejs@18.18.2-r0",
+      "licenses": [{"license": {"id": "MIT"}}]
+    }
+  ],
+  "summary": {
+    "total_components": 156,
+    "direct_dependencies": 12,
+    "transitive_dependencies": 144,
+    "licenses": {
+      "MIT": 98,
+      "Apache-2.0": 45,
+      "ISC": 10,
+      "BSD-3-Clause": 3
+    }
+  }
+}

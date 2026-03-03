@@ -1,69 +1,45 @@
 output "jenkins_public_ip" {
-  description = "Jenkins server public IP"
-  value       = module.jenkins.instance_public_ip
+  value = module.compute.jenkins_public_ip
 }
 
-output "jenkins_url" {
-  description = "Jenkins URL"
-  value       = "http://${module.jenkins.instance_public_ip}:8080"
-}
-
-output "app_public_ip" {
-  description = "Application server public IP"
-  value       = module.app.instance_public_ip
-}
-
+# App runs on ECS Fargate - access via ALB
 output "app_url" {
-  description = "Application URL"
-  value       = "http://${module.app.instance_public_ip}"
+  value = "http://${module.codedeploy.alb_dns_name}"
 }
 
-output "security_group_id" {
-  description = "Security group ID"
-  value       = module.security_group.security_group_id
+output "monitoring_public_ip" {
+  value = module.monitoring.monitoring_public_ip
 }
 
-output "ecr_backend_repository_url" {
-  description = "ECR backend repository URL"
-  value       = module.ecr_backend.repository_url
+output "prometheus_url" {
+  value = "http://${module.monitoring.monitoring_public_ip}:9090"
 }
 
-output "ecr_frontend_repository_url" {
-  description = "ECR frontend repository URL"
-  value       = module.ecr_frontend.repository_url
+output "grafana_url" {
+  value = "http://${module.monitoring.monitoring_public_ip}:3000"
 }
 
-output "ssh_jenkins" {
-  description = "SSH command for Jenkins server"
-  value       = "ssh -i ${var.key_name}.pem ec2-user@${module.jenkins.instance_public_ip}"
+output "cloudtrail_bucket" {
+  value = module.security.cloudtrail_bucket
 }
 
-output "ssh_app" {
-  description = "SSH command for App server"
-  value       = "ssh -i ${var.key_name}.pem ec2-user@${module.app.instance_public_ip}"
+output "guardduty_detector_id" {
+  value = module.security.guardduty_detector_id
 }
 
-output "ecs_cluster_name" {
-  description = "ECS cluster name"
-  value       = module.ecs_backend.cluster_name
+output "aws_region" {
+  value = var.aws_region
 }
 
+# CodeDeploy outputs (conditional)
 output "alb_dns_name" {
-  description = "Application Load Balancer DNS name"
-  value       = module.alb.alb_dns_name
+  value = try(module.codedeploy[0].alb_dns_name, "")
 }
 
-output "alb_url" {
-  description = "Application URL via ALB"
-  value       = "http://${module.alb.alb_dns_name}"
+output "codedeploy_app_name" {
+  value = try(module.codedeploy[0].codedeploy_app_name, "")
 }
 
-output "backend_service_name" {
-  description = "ECS backend service name"
-  value       = module.ecs_backend.service_name
-}
-
-output "frontend_service_name" {
-  description = "ECS frontend service name"
-  value       = module.ecs_frontend.service_name
+output "deployment_group_name" {
+  value = try(module.codedeploy[0].deployment_group_name, "")
 }

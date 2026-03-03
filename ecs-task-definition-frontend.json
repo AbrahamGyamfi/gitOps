@@ -1,0 +1,36 @@
+{
+  "family": "taskflow-frontend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::697863031884:role/taskflow-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::697863031884:role/taskflow-ecs-task-role",
+  "containerDefinitions": [
+    {
+      "name": "taskflow-frontend",
+      "image": "697863031884.dkr.ecr.eu-west-1.amazonaws.com/taskflow-frontend:IMAGE_TAG",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "BACKEND_URL",
+          "value": "http://taskflow-backend.taskflow.local:5000"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/taskflow-frontend",
+          "awslogs-region": "eu-west-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

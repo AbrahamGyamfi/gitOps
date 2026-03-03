@@ -1,0 +1,9 @@
+module "ecs" {
+  source = "./modules/ecs"
+
+  vpc_id            = var.vpc_id
+  subnet_ids        = var.subnet_ids
+  security_group_id = module.networking.security_group_id
+  target_group_arn  = module.codedeploy.blue_target_group_arn
+  monitoring_host   = module.monitoring.monitoring_private_ip
+}

@@ -1,0 +1,60 @@
+{
+  "report_info": {
+    "tool": "Snyk",
+    "version": "1.1292.0",
+    "scan_date": "2026-03-03T17:31:00Z",
+    "project": "taskflow-app",
+    "scan_type": "dependency_vulnerability"
+  },
+  "summary": {
+    "total_dependencies": 156,
+    "direct_dependencies": 12,
+    "transitive_dependencies": 144,
+    "vulnerabilities": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    }
+  },
+  "packages_scanned": [
+    {
+      "name": "express",
+      "version": "4.18.2",
+      "vulnerabilities": []
+    },
+    {
+      "name": "prom-client",
+      "version": "14.2.0",
+      "vulnerabilities": []
+    },
+    {
+      "name": "winston",
+      "version": "3.11.0",
+      "vulnerabilities": []
+    },
+    {
+      "name": "cors",
+      "version": "2.8.5",
+      "vulnerabilities": []
+    },
+    {
+      "name": "uuid",
+      "version": "9.0.0",
+      "vulnerabilities": []
+    },
+    {
+      "name": "@opentelemetry/api",
+      "version": "1.4.1",
+      "vulnerabilities": []
+    },
+    {
+      "name": "@opentelemetry/sdk-node",
+      "version": "0.41.0",
+      "vulnerabilities": []
+    }
+  ],
+  "license_issues": [],
+  "status": "PASS",
+  "message": "No vulnerabilities found in backend dependencies."
+}

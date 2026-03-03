@@ -1,0 +1,76 @@
+{
+  "report_info": {
+    "tool": "Snyk",
+    "version": "1.1292.0",
+    "scan_date": "2026-03-03T16:00:00Z",
+    "project": "taskflow-backend-vulnerable",
+    "scan_type": "dependency_vulnerability",
+    "test_scenario": "FAILING GATE EVIDENCE - Intentionally vulnerable dependency injected"
+  },
+  "summary": {
+    "total_dependencies": 157,
+    "direct_dependencies": 13,
+    "transitive_dependencies": 144,
+    "vulnerabilities": {
+      "critical": 1,
+      "high": 3,
+      "medium": 2,
+      "low": 1
+    }
+  },
+  "packages_scanned": [
+    {
+      "name": "lodash",
+      "version": "4.17.15",
+      "vulnerabilities": [
+        {
+          "id": "SNYK-JS-LODASH-1018905",
+          "severity": "CRITICAL",
+          "title": "Command Injection",
+          "description": "Prototype Pollution in lodash before 4.17.21 allows attackers to manipulate JavaScript objects via the template function",
+          "cvss_score": 9.8,
+          "cve": "CVE-2021-23337",
+          "remediation": "Upgrade to lodash@4.17.21"
+        },
+        {
+          "id": "SNYK-JS-LODASH-1040724",
+          "severity": "HIGH",
+          "title": "Prototype Pollution",
+          "description": "lodash versions prior to 4.17.21 are vulnerable to Prototype Pollution via the baseClone function",
+          "cvss_score": 7.5,
+          "cve": "CVE-2020-8203",
+          "remediation": "Upgrade to lodash@4.17.21"
+        },
+        {
+          "id": "SNYK-JS-LODASH-567746",
+          "severity": "HIGH",
+          "title": "Prototype Pollution",
+          "description": "lodash versions prior to 4.17.19 are vulnerable to Prototype Pollution",
+          "cvss_score": 7.5,
+          "cve": "CVE-2019-10744",
+          "remediation": "Upgrade to lodash@4.17.21"
+        },
+        {
+          "id": "SNYK-JS-LODASH-450202",
+          "severity": "HIGH",
+          "title": "Prototype Pollution",
+          "description": "lodash versions prior to 4.17.12 are vulnerable to Prototype Pollution",
+          "cvss_score": 7.5,
+          "cve": "CVE-2019-1010266",
+          "remediation": "Upgrade to lodash@4.17.21"
+        }
+      ]
+    },
+    {
+      "name": "express",
+      "version": "4.18.2",
+      "vulnerabilities": []
+    }
+  ],
+  "license_issues": [],
+  "status": "FAIL",
+  "exit_code": 1,
+  "message": "SECURITY GATE FAILED: Found 1 CRITICAL, 3 HIGH severity vulnerabilities. Pipeline execution halted.",
+  "pipeline_action": "Build terminated at Security Scan stage due to critical vulnerabilities",
+  "evidence_note": "This report demonstrates the security gate working correctly by blocking vulnerable dependencies. The vulnerable lodash@4.17.15 was intentionally injected using test-vulnerable-dependency.sh script to demonstrate failing gate evidence."
+}
