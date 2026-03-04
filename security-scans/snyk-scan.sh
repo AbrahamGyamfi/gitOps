@@ -25,6 +25,8 @@ if [ -z "${SNYK_TOKEN}" ]; then
     echo "WARNING: SNYK_TOKEN not set - skipping Snyk scan (npm audit already passed)"
 else
     # Override entrypoint - the default snyk/snyk:node entrypoint silently swallows exit codes
+    # Snyk exit codes: 0=clean, 1=vulnerabilities found, 2=error (auth/network/etc)
+    set +e
     docker run --rm \
         --entrypoint="" \
         -e SNYK_TOKEN="${SNYK_TOKEN}" \
@@ -32,8 +34,18 @@ else
         -w /project \
         snyk/snyk:node \
         sh -c 'snyk test --severity-threshold=high; exit $?'
+    SNYK_EXIT=$?
+    set -e
 
-    echo "Snyk scan passed - no High/Critical vulnerabilities"
+    if [ $SNYK_EXIT -eq 0 ]; then
+        echo "Snyk scan passed - no High/Critical vulnerabilities"
+    elif [ $SNYK_EXIT -eq 1 ]; then
+        echo "FAILED: Snyk found High/Critical vulnerabilities in $DIR"
+        exit 1
+    else
+        echo "WARNING: Snyk returned error (exit code $SNYK_EXIT) - auth/network issue"
+        echo "npm audit already passed, so this is non-blocking"
+    fi
 
     # Generate JSON report (|| true so report generation doesn't block pipeline)
     docker run --rm \
