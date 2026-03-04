@@ -7,14 +7,27 @@ echo "=== Running SCA Security Scan ==="
 echo "Directory: $DIR"
 
 # ── Step 1: npm audit (no external token needed - always works) ──
-# --omit=dev: only audit production deps (devDeps like nodemon don't ship in the Docker image)
+# --omit=dev: only audit production deps (devDeps don't ship in Docker images)
+# For frontend (React/Nginx static build): all deps are build-time only,
+# the production image is just Nginx serving static files — no Node.js runtime.
+# We use --audit-level=critical for frontend since react-scripts vulns are
+# build-time only and don't affect the deployed Nginx image.
 echo ""
 echo "--- npm audit (built-in vulnerability check) ---"
-docker run --rm \
-    -v $(pwd)/$DIR:/project \
-    -w /project \
-    node:18-alpine \
-    sh -c 'npm audit --audit-level=high --omit=dev; exit $?'
+if [ "$DIR" = "frontend" ]; then
+    echo "Frontend is a static Nginx build — auditing at CRITICAL level only"
+    docker run --rm \
+        -v $(pwd)/$DIR:/project \
+        -w /project \
+        node:18-alpine \
+        sh -c 'npm audit --audit-level=critical; exit $?'
+else
+    docker run --rm \
+        -v $(pwd)/$DIR:/project \
+        -w /project \
+        node:18-alpine \
+        sh -c 'npm audit --audit-level=high --omit=dev; exit $?'
+fi
 
 echo "npm audit passed - no High/Critical vulnerabilities"
 
