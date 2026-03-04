@@ -3,7 +3,7 @@
 IMAGE=$1
 REPORT_FILE=${2:-sbom.json}
 
-echo "📦 Generating SBOM for: $IMAGE"
+echo "Generating SBOM for: $IMAGE"
 
 # Install Syft locally if not present
 if ! command -v syft &> /dev/null && [ ! -f ./syft ]; then
@@ -21,4 +21,4 @@ fi
 # Generate SBOM
 $SYFT_BIN $IMAGE -o json > $REPORT_FILE
 
-echo "✅ SBOM generated: $REPORT_FILE"
+echo "SUCCESS: SBOM generated: $REPORT_FILE"

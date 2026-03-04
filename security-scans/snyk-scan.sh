@@ -22,4 +22,4 @@ docker run --rm \
     snyk/snyk:node \
     test --json > snyk-$DIR-report.json || true
 
-echo "✅ Snyk scan completed - Pipeline will FAIL if High/Critical vulnerabilities found"
+echo "SUCCESS: Snyk scan completed - Pipeline will FAIL if High/Critical vulnerabilities found"

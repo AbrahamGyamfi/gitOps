@@ -2,7 +2,7 @@
 
 REPORT_FILE=${1:-gitleaks-report.json}
 
-echo "🔍 Scanning for secrets..."
+echo "Scanning for secrets..."
 
 # Install Gitleaks if not present
 if ! command -v gitleaks &> /dev/null; then
@@ -22,13 +22,13 @@ $GITLEAKS_BIN detect --report-format json --report-path $REPORT_FILE --no-git ||
 # Check for secrets
 if [ -f "$REPORT_FILE" ]; then
     SECRETS=$(jq '. | length' $REPORT_FILE)
-    echo "📊 Found $SECRETS potential secrets"
+    echo "Found $SECRETS potential secrets"
     
     if [ "$SECRETS" -gt 0 ]; then
-        echo "❌ FAILED: Secrets detected in code"
+        echo "FAILED: Secrets detected in code"
         jq -r '.[] | "  - \(.Description) in \(.File):\(.StartLine)"' $REPORT_FILE
         exit 1
     fi
 fi
 
-echo "✅ PASSED: No secrets detected"
+echo "PASSED: No secrets detected"

@@ -76,7 +76,7 @@ def deployToECS(String component, String containerPort) {
             --query 'deployments[0]' --output text 2>/dev/null || echo "None")
         
         if [ "\$EXISTING_DEPLOYMENT" != "None" ] && [ -n "\$EXISTING_DEPLOYMENT" ]; then
-            echo "⚠️ Stopping existing deployment: \$EXISTING_DEPLOYMENT"
+            echo "WARNING: Stopping existing deployment: \$EXISTING_DEPLOYMENT"
             aws deploy stop-deployment --deployment-id \$EXISTING_DEPLOYMENT --region \${AWS_REGION} --auto-rollback-enabled || true
             sleep 5
         fi
@@ -127,7 +127,7 @@ EOF
             --s3-location bucket=\${S3_BUCKET},key=\${S3_KEY},bundleType=YAML \
             --region \${AWS_REGION} \
             --query 'deploymentId' --output text)
-        echo "✅ ${component.capitalize()} deployment: \$DEPLOYMENT_ID"
+        echo "SUCCESS: ${component.capitalize()} deployment: \$DEPLOYMENT_ID"
     """
 }
 
@@ -158,22 +158,22 @@ def performHealthCheck(String albUrl, int maxRetries = 30, int intervalSec = 10)
                     returnStdout: true
                 ).trim()
                 if (response == "${endpoint.expectedStatus}") {
-                    echo "✅ ${endpoint.name}: HTTP ${response}"
+                    echo "SUCCESS: ${endpoint.name}: HTTP ${response}"
                     success = true
                 } else {
-                    echo "⏳ ${endpoint.name}: HTTP ${response} (attempt ${i}/${maxRetries})"
+                    echo "WAITING: ${endpoint.name}: HTTP ${response} (attempt ${i}/${maxRetries})"
                     if (i < maxRetries) sleep(intervalSec)
                 }
             } catch (Exception e) {
-                echo "⏳ ${endpoint.name}: Connection failed (attempt ${i}/${maxRetries})"
+                echo "WAITING: ${endpoint.name}: Connection failed (attempt ${i}/${maxRetries})"
                 if (i < maxRetries) sleep(intervalSec)
             }
         }
         if (!success) {
-            error "❌ ${endpoint.name} health check failed after ${maxRetries} attempts"
+            error "FAILED: ${endpoint.name} health check failed after ${maxRetries} attempts"
         }
     }
-    echo "✅ All health checks passed!"
+    echo "SUCCESS: All health checks passed!"
 }
 
 // ============================================================================
@@ -250,6 +250,34 @@ pipeline {
             }
         }
         
+        stage('Code Quality') {
+            steps {
+                script {
+                    echo 'Running code quality checks...'
+                    withCredentials([string(credentialsId: 'node-version', variable: 'NODE_VERSION')]) {
+                        parallel(
+                            backendLint: { runTests('backend', 'lint') },
+                            frontendLint: { runTests('frontend', 'lint') }
+                        )
+                    }
+                }
+            }
+        }
+        
+        stage('Run Unit Tests') {
+            steps {
+                script {
+                    echo 'Running unit tests...'
+                    withCredentials([string(credentialsId: 'node-version', variable: 'NODE_VERSION')]) {
+                        parallel(
+                            backend: { runTests('backend', 'unit') },
+                            frontend: { runTests('frontend', 'unit') }
+                        )
+                    }
+                }
+            }
+        }
+        
         stage('Build Docker Images') {
             steps {
                 script {
@@ -293,35 +321,15 @@ pipeline {
             }
         }
         
-        stage('Run Unit Tests') {
+        stage('Image Verification') {
             steps {
                 script {
-                    echo 'Running unit tests...'
-                    withCredentials([string(credentialsId: 'node-version', variable: 'NODE_VERSION')]) {
-                        parallel(
-                            backend: { runTests('backend', 'unit') },
-                            frontend: { runTests('frontend', 'unit') }
-                        )
-                    }
-                }
-            }
-        }
-        
-        stage('Code Quality') {
-            steps {
-                script {
-                    echo 'Running code quality checks...'
-                    withCredentials(getAWSCredentials() + [string(credentialsId: 'node-version', variable: 'NODE_VERSION')]) {
-                        parallel(
-                            backendLint: { runTests('backend', 'lint') },
-                            frontendLint: { runTests('frontend', 'lint') },
-                            imageTest: {
-                                sh """
-                                    docker run --rm \${AWS_ACCOUNT_ID}.dkr.ecr.\${AWS_REGION}.amazonaws.com/\${APP_NAME}-backend:${IMAGE_TAG} node --version
-                                    docker run --rm \${AWS_ACCOUNT_ID}.dkr.ecr.\${AWS_REGION}.amazonaws.com/\${APP_NAME}-frontend:${IMAGE_TAG} nginx -v
-                                """
-                            }
-                        )
+                    echo 'Verifying built images...'
+                    withCredentials(getAWSCredentials()) {
+                        sh """
+                            docker run --rm \${AWS_ACCOUNT_ID}.dkr.ecr.\${AWS_REGION}.amazonaws.com/\${APP_NAME}-backend:${IMAGE_TAG} node --version
+                            docker run --rm \${AWS_ACCOUNT_ID}.dkr.ecr.\${AWS_REGION}.amazonaws.com/\${APP_NAME}-frontend:${IMAGE_TAG} nginx -v
+                        """
                     }
                 }
             }

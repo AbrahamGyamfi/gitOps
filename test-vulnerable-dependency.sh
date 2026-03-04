@@ -11,8 +11,8 @@ cd backend
 npm install lodash@4.17.15 --save
 cd ..
 
-echo "✅ Vulnerable dependency added"
-echo "📝 Commit and push to trigger pipeline"
+echo "SUCCESS: Vulnerable dependency added"
+echo "NOTE: Commit and push to trigger pipeline"
 echo ""
 echo "Expected: Pipeline should FAIL at SCA Scan stage"
 echo ""

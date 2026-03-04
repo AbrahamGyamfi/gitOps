@@ -32,4 +32,4 @@ docker run --rm \
   -Dsonar.sources=. \
   -Dsonar.exclusions="**/node_modules/**,**/test/**,**/tests/**"
 
-echo "✅ SonarCloud scan completed"
+echo "SUCCESS: SonarCloud scan completed"

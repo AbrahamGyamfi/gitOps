@@ -62,7 +62,7 @@ curl -s -u "$JENKINS_USER:$JENKINS_PASSWORD" \
   }'
 
 echo ""
-echo "✅ Credentials added to Jenkins!"
+echo "SUCCESS: Credentials added to Jenkins!"
 echo ""
 echo "Next steps:"
 echo "1. Get Snyk token from https://snyk.io/account"

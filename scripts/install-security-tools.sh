@@ -23,7 +23,7 @@ ssh -i ~/.ssh/id_rsa ec2-user@$JENKINS_IP << 'EOF'
   sudo yum install -y jq
   cd ~/sonarqube
   docker-compose up -d
-  echo "✅ Tools installed"
+  echo "SUCCESS: Tools installed"
 EOF
 
-echo "✅ Complete. SonarQube: http://$JENKINS_IP:9000"
+echo "SUCCESS: Complete. SonarQube: http://$JENKINS_IP:9000"

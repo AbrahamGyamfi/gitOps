@@ -3,7 +3,7 @@
 IMAGE=$1
 REPORT_FILE=${2:-trivy-report.json}
 
-echo "🔍 Scanning image: $IMAGE"
+echo "Scanning image: $IMAGE"
 
 # Use Trivy via Docker (no installation needed) - exit on error
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
