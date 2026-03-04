@@ -21,6 +21,7 @@ def buildDockerImage(String component, String imageTag) {
                 --build-arg BUILD_DATE=\$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
                 --build-arg VCS_REF=\${GIT_COMMIT} \
                 --build-arg BUILD_NUMBER=\${BUILD_NUMBER} \
+                --network=host \
                 -t \${AWS_ACCOUNT_ID}.dkr.ecr.\${AWS_REGION}.amazonaws.com/\${APP_NAME}-${component}:${imageTag} .
         """
     }
