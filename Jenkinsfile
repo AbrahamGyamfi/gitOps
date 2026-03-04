@@ -473,10 +473,19 @@ pipeline {
             steps {
                 script {
                     echo 'Verifying ALB endpoints...'
-                    withCredentials([
-                        string(credentialsId: 'alb-dns-name', variable: 'ALB_DNS')
-                    ]) {
-                        performHealthCheck("http://${env.ALB_DNS}", 6, 5)
+                    withCredentials(getAWSCredentials()) {
+                        def albDns = sh(
+                            script: '''
+                                aws elbv2 describe-load-balancers \
+                                    --names taskflow-alb \
+                                    --region ${AWS_REGION} \
+                                    --query 'LoadBalancers[0].DNSName' \
+                                    --output text
+                            ''',
+                            returnStdout: true
+                        ).trim()
+                        echo "ALB DNS: ${albDns}"
+                        performHealthCheck("http://${albDns}", 6, 5)
                     }
                 }
             }
