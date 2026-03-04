@@ -3,23 +3,45 @@ set -e
 
 DIR=$1
 
-echo "=== Running Snyk SCA ==="
+echo "=== Running SCA Security Scan ==="
 echo "Directory: $DIR"
 
-# Run Snyk test via Docker - fail on high severity
+# ── Step 1: npm audit (no external token needed - always works) ──
+echo ""
+echo "--- npm audit (built-in vulnerability check) ---"
 docker run --rm \
-    -e SNYK_TOKEN="${SNYK_TOKEN}" \
     -v $(pwd)/$DIR:/project \
     -w /project \
-    snyk/snyk:node \
-    test --severity-threshold=high
+    node:18-alpine \
+    sh -c 'npm audit --audit-level=high; exit $?'
 
-# Also generate JSON report
-docker run --rm \
-    -e SNYK_TOKEN="${SNYK_TOKEN}" \
-    -v $(pwd)/$DIR:/project \
-    -w /project \
-    snyk/snyk:node \
-    test --json > snyk-$DIR-report.json || true
+echo "npm audit passed - no High/Critical vulnerabilities"
 
-echo "SUCCESS: Snyk scan completed - Pipeline will FAIL if High/Critical vulnerabilities found"
+# ── Step 2: Snyk deep scan (requires SNYK_TOKEN) ──
+echo ""
+echo "--- Snyk SCA (deep dependency analysis) ---"
+if [ -z "${SNYK_TOKEN}" ]; then
+    echo "WARNING: SNYK_TOKEN not set - skipping Snyk scan (npm audit already passed)"
+else
+    # Override entrypoint - the default snyk/snyk:node entrypoint silently swallows exit codes
+    docker run --rm \
+        --entrypoint="" \
+        -e SNYK_TOKEN="${SNYK_TOKEN}" \
+        -v $(pwd)/$DIR:/project \
+        -w /project \
+        snyk/snyk:node \
+        sh -c 'snyk test --severity-threshold=high; exit $?'
+
+    echo "Snyk scan passed - no High/Critical vulnerabilities"
+
+    # Generate JSON report (|| true so report generation doesn't block pipeline)
+    docker run --rm \
+        --entrypoint="" \
+        -e SNYK_TOKEN="${SNYK_TOKEN}" \
+        -v $(pwd)/$DIR:/project \
+        -w /project \
+        snyk/snyk:node \
+        sh -c 'snyk test --json' > snyk-$DIR-report.json || true
+fi
+
+echo "SUCCESS: SCA scan completed for $DIR"
