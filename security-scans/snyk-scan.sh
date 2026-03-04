@@ -7,13 +7,14 @@ echo "=== Running SCA Security Scan ==="
 echo "Directory: $DIR"
 
 # ── Step 1: npm audit (no external token needed - always works) ──
+# --omit=dev: only audit production deps (devDeps like nodemon don't ship in the Docker image)
 echo ""
 echo "--- npm audit (built-in vulnerability check) ---"
 docker run --rm \
     -v $(pwd)/$DIR:/project \
     -w /project \
     node:18-alpine \
-    sh -c 'npm audit --audit-level=high; exit $?'
+    sh -c 'npm audit --audit-level=high --omit=dev; exit $?'
 
 echo "npm audit passed - no High/Critical vulnerabilities"
 
