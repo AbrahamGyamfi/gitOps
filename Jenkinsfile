@@ -82,8 +82,19 @@ def deployToECS(String component, String containerPort) {
             sleep 5
         fi
 
-        # Register task definition
-        sed 's/IMAGE_TAG/${IMAGE_TAG}/g' ${taskDefFile} > ${taskDefFile.replace('.json', '')}-${IMAGE_TAG}.json
+        # Resolve monitoring host IP from Terraform outputs or EC2 tag
+        MONITORING_HOST=\$(aws ec2 describe-instances \
+            --region \${AWS_REGION} \
+            --filters "Name=tag:Name,Values=taskflow-monitoring" "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text)
+        if [ -z "\$MONITORING_HOST" ] || [ "\$MONITORING_HOST" = "None" ]; then
+            echo "WARNING: Monitoring instance not found — using fallback"
+            MONITORING_HOST="127.0.0.1"
+        fi
+        echo "Monitoring host IP: \$MONITORING_HOST"
+
+        # Register task definition — inject IMAGE_TAG and MONITORING_HOST
+        sed -e 's/IMAGE_TAG/${IMAGE_TAG}/g' -e "s/MONITORING_HOST/\$MONITORING_HOST/g" ${taskDefFile} > ${taskDefFile.replace('.json', '')}-${IMAGE_TAG}.json
         TASK_ARN=\$(aws ecs register-task-definition \
             --cli-input-json file://${taskDefFile.replace('.json', '')}-${IMAGE_TAG}.json \
             --region \${AWS_REGION} \

@@ -9,17 +9,25 @@ alerting:
 
 rule_files:
   - /etc/prometheus/alert_rules.yml
+  - /etc/prometheus/recording_rules.yml
 
 scrape_configs:
+  # Prometheus self-monitoring
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
+  # TaskFlow backend on ECS Fargate
+  # Uses file-based service discovery — a cron script updates targets.json
+  # with current ECS task private IPs from Cloud Map DNS
   - job_name: 'taskflow-backend'
-    static_configs:
-      - targets: ['${APP_PRIVATE_IP}:5000']
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/taskflow-backend.json
+        refresh_interval: 30s
     metrics_path: '/metrics'
 
+  # Node exporter on the monitoring host itself
   - job_name: 'node-exporter'
     static_configs:
-      - targets: ['${APP_PRIVATE_IP}:9100']
+      - targets: ['node-exporter:9100']

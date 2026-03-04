@@ -28,3 +28,12 @@ datasources:
     access: proxy
     url: http://jaeger:16686
     editable: true
+
+  - name: Alertmanager
+    type: alertmanager
+    uid: alertmanager
+    access: proxy
+    url: http://alertmanager:9093
+    editable: true
+    jsonData:
+      implementation: prometheus

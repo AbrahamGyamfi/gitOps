@@ -128,6 +128,34 @@ resource "aws_iam_role_policy_attachment" "ecr_read_only" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+# CloudWatch Logs read access for ECS logs in Grafana
+resource "aws_iam_role_policy" "ecs_logs_read" {
+  name = "ecs-cloudwatch-logs-read"
+  role = aws_iam_role.cloudwatch_logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+          "logs:GetLogEvents",
+          "logs:FilterLogEvents",
+          "logs:StartQuery",
+          "logs:StopQuery",
+          "logs:GetQueryResults"
+        ]
+        Resource = [
+          "arn:aws:logs:*:${var.aws_account_id}:log-group:/ecs/taskflow-*",
+          "arn:aws:logs:*:${var.aws_account_id}:log-group:/ecs/taskflow-*:*"
+        ]
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy" "codedeploy_s3" {
   name = "codedeploy-s3-access"
   role = aws_iam_role.cloudwatch_logs.id

@@ -1,38 +1,59 @@
 groups:
-  - name: taskflow_observability_alerts
+  # ── Application SLO alerts (uses recording rules where possible) ──
+  - name: taskflow_slo_alerts
     interval: 30s
     rules:
+      # --- Error Rate ---
       - alert: TaskflowHighErrorRate
         expr: |
-          (
-            sum(rate(taskflow_http_errors_total{route!="/metrics"}[5m]))
-            /
-            clamp_min(sum(rate(taskflow_http_requests_total{route!="/metrics"}[5m])), 0.001)
-          ) * 100 > 5
+          taskflow:http_error_rate:ratio5m * 100 > 5
           and
-          sum(rate(taskflow_http_requests_total{route!="/metrics"}[5m])) > 0
+          taskflow:http_requests:rate5m > 0
         for: 10m
         labels:
           severity: critical
           service: taskflow-backend
         annotations:
           summary: "TaskFlow error rate above 5% for 10 minutes"
-          description: "Error rate is {{ $value }}% (threshold: 5%)"
+          description: "Error rate is {{ $value | printf \"%.1f\" }}% (threshold: 5%)"
+          runbook_url: "https://wiki.internal/runbooks/taskflow-high-error-rate"
 
-      - alert: TaskflowHighLatency
+      - alert: TaskflowElevatedErrorRate
         expr: |
-          histogram_quantile(
-            0.95,
-            sum(rate(taskflow_http_request_duration_seconds_bucket{route!="/metrics"}[5m])) by (le)
-          ) > 0.3
+          taskflow:http_error_rate:ratio5m * 100 > 1
+          and
+          taskflow:http_requests:rate5m > 0
+        for: 15m
+        labels:
+          severity: warning
+          service: taskflow-backend
+        annotations:
+          summary: "TaskFlow error rate above 1% for 15 minutes"
+          description: "Error rate is {{ $value | printf \"%.1f\" }}% (threshold: 1%)"
+
+      # --- Latency ---
+      - alert: TaskflowHighLatency
+        expr: taskflow:http_request_duration_p95:5m > 0.3
         for: 10m
         labels:
           severity: critical
           service: taskflow-backend
         annotations:
           summary: "TaskFlow p95 latency above 300ms for 10 minutes"
-          description: "Current p95 latency is {{ $value }}s (threshold: 0.3s)"
+          description: "Current p95 latency is {{ $value | printf \"%.3f\" }}s (threshold: 0.3s)"
+          runbook_url: "https://wiki.internal/runbooks/taskflow-high-latency"
 
+      - alert: TaskflowElevatedLatency
+        expr: taskflow:http_request_duration_p95:5m > 0.15
+        for: 15m
+        labels:
+          severity: warning
+          service: taskflow-backend
+        annotations:
+          summary: "TaskFlow p95 latency above 150ms for 15 minutes"
+          description: "Current p95 latency is {{ $value | printf \"%.3f\" }}s (threshold: 0.15s)"
+
+      # --- Availability ---
       - alert: TaskflowServiceDown
         expr: up{job="taskflow-backend"} == 0
         for: 1m
@@ -42,3 +63,125 @@ groups:
         annotations:
           summary: "TaskFlow backend target is down"
           description: "Prometheus target taskflow-backend is not reachable"
+          runbook_url: "https://wiki.internal/runbooks/taskflow-service-down"
+
+      - alert: TaskflowNoTraffic
+        expr: |
+          taskflow:http_requests:rate5m == 0
+          and
+          up{job="taskflow-backend"} == 1
+        for: 10m
+        labels:
+          severity: warning
+          service: taskflow-backend
+        annotations:
+          summary: "TaskFlow receiving zero traffic despite being up"
+          description: "Backend is up but request rate has been 0 for 10 minutes"
+
+      # --- Saturation ---
+      - alert: TaskflowHighRequestRate
+        expr: taskflow:http_requests:rate5m > 500
+        for: 5m
+        labels:
+          severity: warning
+          service: taskflow-backend
+        annotations:
+          summary: "TaskFlow request rate unusually high"
+          description: "Request rate is {{ $value | printf \"%.0f\" }} req/s (threshold: 500)"
+
+  # ── Infrastructure alerts ──
+  - name: infra_alerts
+    interval: 30s
+    rules:
+      - alert: HostHighCpuUsage
+        expr: node:cpu_utilization:ratio5m > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "Host CPU usage above 85%"
+          description: "CPU utilization is {{ $value | printf \"%.0f\" }}%"
+
+      - alert: HostCriticalCpuUsage
+        expr: node:cpu_utilization:ratio5m > 0.95
+        for: 5m
+        labels:
+          severity: critical
+          service: infrastructure
+        annotations:
+          summary: "Host CPU usage above 95%"
+          description: "CPU utilization is {{ $value | printf \"%.0f\" }}%"
+
+      - alert: HostHighMemoryUsage
+        expr: node:memory_utilization:ratio > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "Host memory usage above 85%"
+          description: "Memory utilization is {{ $value | printf \"%.0f\" }}%"
+
+      - alert: HostDiskSpaceLow
+        expr: node:disk_utilization:ratio > 0.80
+        for: 10m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "Host disk usage above 80%"
+          description: "Disk utilization is {{ $value | printf \"%.0f\" }}%"
+
+      - alert: HostDiskSpaceCritical
+        expr: node:disk_utilization:ratio > 0.90
+        for: 5m
+        labels:
+          severity: critical
+          service: infrastructure
+        annotations:
+          summary: "Host disk usage above 90%"
+          description: "Disk utilization is {{ $value | printf \"%.0f\" }}%"
+
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 3m
+        labels:
+          severity: critical
+          service: infrastructure
+        annotations:
+          summary: "Prometheus target {{ $labels.job }} is down"
+          description: "Target {{ $labels.instance }} has been unreachable for 3 minutes"
+
+  # ── Observability stack self-monitoring ──
+  - name: observability_stack_alerts
+    interval: 30s
+    rules:
+      - alert: PrometheusConfigReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: prometheus
+        annotations:
+          summary: "Prometheus config reload has failed"
+          description: "Check prometheus logs and config syntax"
+
+      - alert: AlertmanagerConfigReloadFailed
+        expr: alertmanager_config_last_reload_successful == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: alertmanager
+        annotations:
+          summary: "Alertmanager config reload has failed"
+
+      - alert: PrometheusHighScrapeLatency
+        expr: prometheus_target_interval_length_seconds{quantile="0.99"} > 60
+        for: 10m
+        labels:
+          severity: warning
+          service: prometheus
+        annotations:
+          summary: "Prometheus scrape interval is lagging"
+          description: "99th percentile scrape interval is {{ $value }}s"

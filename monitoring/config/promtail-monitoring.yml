@@ -1,0 +1,82 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+# ── Scrape ECS Fargate logs from CloudWatch ──
+# The Fargate tasks use awslogs driver → CloudWatch Logs.
+# Promtail tails those log groups and pushes structured entries to Loki.
+# The monitoring EC2 instance IAM role grants logs:GetLogEvents access.
+scrape_configs:
+  # Backend Fargate logs from CloudWatch
+  - job_name: ecs-fargate-backend
+    cloudwatch:
+      region: eu-west-1
+      log_groups:
+        - /ecs/taskflow-backend
+      labels:
+        job: taskflow-backend
+        source: fargate
+      # How far back to start tailing on first run
+      start_from: "2h"
+    relabel_configs:
+      - source_labels: [__cloudwatch_log_group]
+        target_label: log_group
+      - source_labels: [__cloudwatch_log_stream]
+        target_label: log_stream
+    pipeline_stages:
+      # Fargate awslogs driver sends raw JSON from container stdout
+      - json:
+          expressions:
+            level: level
+            service: service
+            message: message
+            route: route
+            method: method
+            status_code: status_code
+            trace_id: trace_id
+            span_id: span_id
+            duration_ms: duration_ms
+      - labels:
+          level:
+          service:
+          route:
+          method:
+          status_code:
+      # Keep trace_id and span_id as structured metadata for Loki correlation
+      - structured_metadata:
+          trace_id:
+          span_id:
+      # Use the extracted message as the log line (cleaner in Grafana)
+      - output:
+          source: message
+
+  # Frontend Fargate logs from CloudWatch
+  - job_name: ecs-fargate-frontend
+    cloudwatch:
+      region: eu-west-1
+      log_groups:
+        - /ecs/taskflow-frontend
+      labels:
+        job: taskflow-frontend
+        source: fargate
+      start_from: "2h"
+    relabel_configs:
+      - source_labels: [__cloudwatch_log_group]
+        target_label: log_group
+      - source_labels: [__cloudwatch_log_stream]
+        target_label: log_stream
+
+  # Local system logs on the monitoring host
+  - job_name: monitoring-host-syslog
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: monitoring-host
+          __path__: /var/log/messages

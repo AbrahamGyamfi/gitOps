@@ -1,5 +1,9 @@
 version: '3.8'
 
+networks:
+  monitoring:
+    driver: bridge
+
 services:
   prometheus:
     image: prom/prometheus:latest
@@ -9,12 +13,23 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=15d'
       - '--storage.tsdb.retention.size=5GB'
+      - '--web.enable-lifecycle'
     ports:
       - "9090:9090"
     volumes:
-      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./config/alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./config/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - ./config/recording_rules.yml:/etc/prometheus/recording_rules.yml:ro
+      - ./targets:/etc/prometheus/targets
       - prometheus-data:/prometheus
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   grafana:
@@ -26,9 +41,23 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
     volumes:
-      - ./config/grafana-datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
-      - ./dashboards:/etc/grafana/provisioning/dashboards
+      - ./config/grafana-datasource-cloudwatch.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./provisioning/dashboards/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:ro
+      - ./dashboards:/var/lib/grafana/dashboards
       - grafana-data:/var/lib/grafana
+    networks:
+      - monitoring
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
 
   alertmanager:
@@ -36,20 +65,38 @@ services:
     container_name: alertmanager
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
     ports:
       - "9093:9093"
     volumes:
-      - ./config/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ./config/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: jaeger
     ports:
-      - "16686:16686"
-      - "4318:4318"
+      - "16686:16686"   # Jaeger UI
+      - "4318:4318"     # OTLP HTTP receiver (traces from Fargate)
     environment:
       - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:16686/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   loki:
@@ -58,18 +105,34 @@ services:
     ports:
       - "3100:3100"
     volumes:
-      - ./config/loki-config.yml:/etc/loki/local-config.yaml
+      - ./config/loki-config.yml:/etc/loki/local-config.yaml:ro
       - loki-data:/loki
     command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
 
   promtail:
     image: grafana/promtail:latest
     container_name: promtail
     volumes:
-      - ./config/promtail-app.yml:/etc/promtail/config.yml
-      - /var/log:/var/log
+      - ./config/promtail-monitoring.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+    # Pass through EC2 instance role credentials for CloudWatch access
+    environment:
+      - AWS_REGION=eu-west-1
     command: -config.file=/etc/promtail/config.yml
+    networks:
+      - monitoring
+    depends_on:
+      loki:
+        condition: service_healthy
     restart: unless-stopped
 
   node-exporter:
@@ -81,9 +144,12 @@ services:
       - '--path.rootfs=/host'
     volumes:
       - '/:/host:ro,rslave'
+    networks:
+      - monitoring
     restart: unless-stopped
 
 volumes:
   prometheus-data:
   grafana-data:
   loki-data:
+  alertmanager-data:

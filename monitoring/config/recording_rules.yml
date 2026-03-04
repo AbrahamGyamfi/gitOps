@@ -1,0 +1,82 @@
+groups:
+  # ── RED methodology pre-computed metrics ──
+  # These recording rules speed up dashboard queries and alert evaluation
+  # by pre-computing commonly used expressions.
+  - name: taskflow_red_recordings
+    interval: 15s
+    rules:
+      # Request Rate (per second, 5m window)
+      - record: taskflow:http_requests:rate5m
+        expr: >
+          sum(rate(taskflow_http_requests_total{route!="/metrics"}[5m]))
+
+      # Request Rate by route
+      - record: taskflow:http_requests_by_route:rate5m
+        expr: >
+          sum(rate(taskflow_http_requests_total{route!="/metrics"}[5m])) by (route, method)
+
+      # Error Rate (percentage, 5m window)
+      - record: taskflow:http_error_rate:ratio5m
+        expr: >
+          sum(rate(taskflow_http_errors_total{route!="/metrics"}[5m]))
+          /
+          clamp_min(sum(rate(taskflow_http_requests_total{route!="/metrics"}[5m])), 0.001)
+
+      # Error Rate by route
+      - record: taskflow:http_error_rate_by_route:ratio5m
+        expr: >
+          sum(rate(taskflow_http_errors_total{route!="/metrics"}[5m])) by (route)
+          /
+          clamp_min(sum(rate(taskflow_http_requests_total{route!="/metrics"}[5m])) by (route), 0.001)
+
+      # Duration p50
+      - record: taskflow:http_request_duration_p50:5m
+        expr: >
+          histogram_quantile(0.50,
+            sum(rate(taskflow_http_request_duration_seconds_bucket{route!="/metrics"}[5m])) by (le)
+          )
+
+      # Duration p95
+      - record: taskflow:http_request_duration_p95:5m
+        expr: >
+          histogram_quantile(0.95,
+            sum(rate(taskflow_http_request_duration_seconds_bucket{route!="/metrics"}[5m])) by (le)
+          )
+
+      # Duration p99
+      - record: taskflow:http_request_duration_p99:5m
+        expr: >
+          histogram_quantile(0.99,
+            sum(rate(taskflow_http_request_duration_seconds_bucket{route!="/metrics"}[5m])) by (le)
+          )
+
+      # Duration p95 by route
+      - record: taskflow:http_request_duration_p95_by_route:5m
+        expr: >
+          histogram_quantile(0.95,
+            sum(rate(taskflow_http_request_duration_seconds_bucket{route!="/metrics"}[5m])) by (le, route)
+          )
+
+  # ── Infrastructure pre-computed metrics ──
+  - name: infra_recordings
+    interval: 15s
+    rules:
+      - record: node:cpu_utilization:ratio5m
+        expr: >
+          1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))
+
+      - record: node:memory_utilization:ratio
+        expr: >
+          1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+
+      - record: node:disk_utilization:ratio
+        expr: >
+          1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})
+
+      - record: node:network_receive:rate5m
+        expr: >
+          sum(rate(node_network_receive_bytes_total{device!="lo"}[5m]))
+
+      - record: node:network_transmit:rate5m
+        expr: >
+          sum(rate(node_network_transmit_bytes_total{device!="lo"}[5m]))
