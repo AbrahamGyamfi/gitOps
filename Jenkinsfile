@@ -129,6 +129,9 @@ EOF
             --region \${AWS_REGION} \
             --query 'deploymentId' --output text)
         echo "SUCCESS: ${component.capitalize()} deployment: \$DEPLOYMENT_ID"
+
+        # Persist deployment ID so Wait stage can track it
+        echo "\$DEPLOYMENT_ID" > deployment-id-${component}.txt
     """
 }
 
@@ -405,18 +408,60 @@ pipeline {
         stage('Wait for Deployment') {
             steps {
                 script {
-                    echo 'Waiting for ECS services to stabilize...'
+                    echo 'Waiting for CodeDeploy deployments to complete...'
                     withCredentials(getAWSCredentials() + [
                         string(credentialsId: 'ecs-cluster-name', variable: 'ECS_CLUSTER')
                     ]) {
-                        timeout(time: 10, unit: 'MINUTES') {
+                        timeout(time: 15, unit: 'MINUTES') {
                             sh '''
-                                aws ecs wait services-stable \
+                                set -euo pipefail
+
+                                for component in frontend backend; do
+                                    DEPLOY_ID=$(cat deployment-id-${component}.txt 2>/dev/null || echo "")
+                                    if [ -z "$DEPLOY_ID" ]; then
+                                        echo "ERROR: No deployment ID found for $component"
+                                        exit 1
+                                    fi
+
+                                    echo "Waiting for $component deployment: $DEPLOY_ID"
+                                    while true; do
+                                        DEP_STATUS=$(aws deploy get-deployment \
+                                            --deployment-id "$DEPLOY_ID" \
+                                            --region ${AWS_REGION} \
+                                            --query 'deploymentInfo.status' --output text)
+
+                                        echo "  $component ($DEPLOY_ID): $DEP_STATUS"
+
+                                        case $DEP_STATUS in
+                                            Succeeded)
+                                                echo "SUCCESS: $component deployment completed"
+                                                break
+                                                ;;
+                                            Failed|Stopped)
+                                                echo "FAILED: $component deployment $DEP_STATUS"
+                                                aws deploy get-deployment \
+                                                    --deployment-id "$DEPLOY_ID" \
+                                                    --region ${AWS_REGION} \
+                                                    --query 'deploymentInfo.errorInformation' --output json || true
+                                                exit 1
+                                                ;;
+                                            *)
+                                                sleep 10
+                                                ;;
+                                        esac
+                                    done
+                                done
+
+                                echo ""
+                                echo "=== Final ECS Service Status ==="
+                                aws ecs describe-services \
                                     --cluster ${ECS_CLUSTER} \
                                     --services taskflow-frontend taskflow-backend \
-                                    --region ${AWS_REGION}
-                                
-                                echo "Deployment completed successfully"
+                                    --region ${AWS_REGION} \
+                                    --query 'services[*].[serviceName,status,runningCount,desiredCount]' \
+                                    --output table
+
+                                echo "All deployments completed successfully"
                             '''
                         }
                     }
@@ -431,40 +476,7 @@ pipeline {
                     withCredentials([
                         string(credentialsId: 'alb-dns-name', variable: 'ALB_DNS')
                     ]) {
-                        timeout(time: 5, unit: 'MINUTES') {
-                            sh '''
-                                set -euo pipefail
-                                
-                                echo "Testing frontend endpoint..."
-                                for i in {1..30}; do
-                                    if curl -fsS http://${ALB_DNS}/ >/dev/null 2>&1; then
-                                        echo "SUCCESS: Frontend is healthy"
-                                        break
-                                    fi
-                                    if [ $i -eq 30 ]; then
-                                        echo "FAILED: Frontend health check failed after 30 attempts"
-                                        exit 1
-                                    fi
-                                    sleep 10
-                                done
-                                
-                                echo "Testing backend health endpoint..."
-                                if ! curl -fsS http://${ALB_DNS}/health | grep -q "ok"; then
-                                    echo "FAILED: Backend health check failed"
-                                    exit 1
-                                fi
-                                echo "SUCCESS: Backend is healthy"
-                                
-                                echo "Testing backend API endpoint..."
-                                if ! curl -fsS http://${ALB_DNS}/api/tasks >/dev/null 2>&1; then
-                                    echo "FAILED: Backend API check failed"
-                                    exit 1
-                                fi
-                                echo "SUCCESS: Backend API is healthy"
-                                
-                                echo "All health checks passed!"
-                            '''
-                        }
+                        performHealthCheck("http://${env.ALB_DNS}", 6, 5)
                     }
                 }
             }
