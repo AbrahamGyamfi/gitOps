@@ -401,30 +401,70 @@ pipeline {
                 }
             }
         }
-
+        
+        stage('Wait for Deployment') {
+            steps {
+                script {
+                    echo 'Waiting for ECS services to stabilize...'
+                    withCredentials(getAWSCredentials() + [
+                        string(credentialsId: 'ecs-cluster-name', variable: 'ECS_CLUSTER')
+                    ]) {
+                        timeout(time: 10, unit: 'MINUTES') {
+                            sh '''
+                                aws ecs wait services-stable \
+                                    --cluster ${ECS_CLUSTER} \
+                                    --services taskflow-frontend taskflow-backend \
+                                    --region ${AWS_REGION}
+                                
+                                echo "Deployment completed successfully"
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        
         stage('Health Check') {
             steps {
                 script {
-                    echo 'Verifying ECS services and ALB endpoints...'
+                    echo 'Verifying ALB endpoints...'
                     withCredentials([
-                        [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID],
-                        string(credentialsId: 'aws-region', variable: 'AWS_REGION'),
-                        string(credentialsId: 'ecs-cluster-name', variable: 'ECS_CLUSTER'),
-                        string(credentialsId: 'alb-dns-name', variable: 'ALB_DNS_NAME')
+                        string(credentialsId: 'alb-dns-name', variable: 'ALB_DNS')
                     ]) {
-                        // Check ECS service status
-                        sh '''
-                            echo "ECS Service Status:"
-                            aws ecs describe-services \
-                                --cluster ${ECS_CLUSTER} \
-                                --services taskflow-frontend taskflow-backend \
-                                --region ${AWS_REGION} \
-                                --query 'services[*].[serviceName,status,runningCount,desiredCount]' \
-                                --output table
-                        '''
-                        
-                        // Check ALB endpoints (with retries for blue-green cutover)
-                        performHealthCheck("http://${ALB_DNS_NAME}")
+                        timeout(time: 5, unit: 'MINUTES') {
+                            sh '''
+                                set -euo pipefail
+                                
+                                echo "Testing frontend endpoint..."
+                                for i in {1..30}; do
+                                    if curl -fsS http://${ALB_DNS}/ >/dev/null 2>&1; then
+                                        echo "SUCCESS: Frontend is healthy"
+                                        break
+                                    fi
+                                    if [ $i -eq 30 ]; then
+                                        echo "FAILED: Frontend health check failed after 30 attempts"
+                                        exit 1
+                                    fi
+                                    sleep 10
+                                done
+                                
+                                echo "Testing backend health endpoint..."
+                                if ! curl -fsS http://${ALB_DNS}/health | grep -q "ok"; then
+                                    echo "FAILED: Backend health check failed"
+                                    exit 1
+                                fi
+                                echo "SUCCESS: Backend is healthy"
+                                
+                                echo "Testing backend API endpoint..."
+                                if ! curl -fsS http://${ALB_DNS}/api/tasks >/dev/null 2>&1; then
+                                    echo "FAILED: Backend API check failed"
+                                    exit 1
+                                fi
+                                echo "SUCCESS: Backend API is healthy"
+                                
+                                echo "All health checks passed!"
+                            '''
+                        }
                     }
                 }
             }
